@@ -1,0 +1,73 @@
+<h2>Claude Code Hooks 集成</h2>
+<p class="subtitle">通过 settings.json 配置 Hooks，宠物自动感知 Claude Code 工作状态</p>
+
+<div class="mockup">
+  <div class="mockup-header">Hooks Configuration</div>
+  <div class="mockup-body" style="padding:24px;font-family:monospace;font-size:12px;line-height:1.6;">
+
+    <div style="color:#a78bfa;font-weight:bold;margin-bottom:12px;">~/.claude/settings.json</div>
+    <div style="background:#0d1117;border-radius:8px;padding:16px;color:#c9d1d9;overflow-x:auto;">
+<pre style="margin:0;white-space:pre;">{
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "*",
+      "command": "node /path/to/claude-pet/hooks/notify.js tool-start"
+    }],
+    "PostToolUse": [{
+      "matcher": "*",
+      "command": "node /path/to/claude-pet/hooks/notify.js tool-end"
+    }],
+    "Stop": [{
+      "command": "node /path/to/claude-pet/hooks/notify.js session-stop"
+    }]
+  }
+}</pre>
+    </div>
+
+    <div style="margin-top:20px;border-top:1px solid #333;padding-top:16px;">
+      <div style="color:#34d399;font-weight:bold;font-size:12px;margin-bottom:8px;">Hook → Pet Event Mapping</div>
+      <table style="width:100%;color:#888;font-size:11px;border-collapse:collapse;">
+        <tr style="border-bottom:1px solid #222;color:#666;">
+          <td style="padding:4px 8px;">Hook</td>
+          <td style="padding:4px 8px;">Event</td>
+          <td style="padding:4px 8px;">Pet State</td>
+          <td style="padding:4px 8px;">Animation</td>
+        </tr>
+        <tr style="border-bottom:1px solid #222;">
+          <td style="padding:4px 8px;color:#fbbf24;">PreToolUse</td>
+          <td style="padding:4px 8px;">tool-start</td>
+          <td style="padding:4px 8px;color:#fbbf24;">WORKING</td>
+          <td style="padding:4px 8px;">忙碌循环动画</td>
+        </tr>
+        <tr style="border-bottom:1px solid #222;">
+          <td style="padding:4px 8px;color:#fbbf24;">PostToolUse</td>
+          <td style="padding:4px 8px;">tool-end</td>
+          <td style="padding:4px 8px;color:#fbbf24;">WORKING</td>
+          <td style="padding:4px 8px;">保持忙碌（可能连续调用）</td>
+        </tr>
+        <tr style="border-bottom:1px solid #222;">
+          <td style="padding:4px 8px;color:#34d399;">Stop</td>
+          <td style="padding:4px 8px;">session-stop</td>
+          <td style="padding:4px 8px;color:#34d399;">CELEBRATE</td>
+          <td style="padding:4px 8px;">欢呼 → 回 IDLE</td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="margin-top:20px;border-top:1px solid #333;padding-top:16px;">
+      <div style="color:#60a5fa;font-weight:bold;font-size:12px;margin-bottom:8px;">Communication: Hook → Pet App</div>
+      <div style="background:#0d1117;border-radius:8px;padding:12px;color:#c9d1d9;">
+<pre style="margin:0;white-space:pre;">// hooks/notify.js
+const net = require('net');
+const event = process.argv[2]; // "tool-start" | "tool-end" | "session-stop"
+const socket = net.connect('/tmp/claude-pet.sock');
+socket.write(JSON.stringify({ event, timestamp: Date.now() }));
+socket.end();</pre>
+      </div>
+      <div style="color:#666;font-size:10px;margin-top:8px;">
+        使用 Unix Socket / Named Pipe 通信，低延迟，无需 HTTP 服务器
+      </div>
+    </div>
+
+  </div>
+</div>

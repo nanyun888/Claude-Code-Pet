@@ -1,0 +1,260 @@
+<h2>像素小人 · 现代风格</h2>
+<p class="subtitle">透明背景 · box-shadow 像素渲染 · 6 种状态 · 柔和配色</p>
+
+<style>
+  .pet-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .pet-card {
+    background: #0f0f1a;
+    border: 1px solid #2a2a3e;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .pet-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-conic-gradient(#141420 0% 25%, #0f0f1a 0% 50%) 50%/12px 12px;
+    opacity: 0.5;
+  }
+  .pet-card .label {
+    position: relative;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+  }
+  .pet-card .canvas {
+    position: relative;
+    width: 120px;
+    height: 140px;
+    margin: 0 auto;
+    image-rendering: pixelated;
+  }
+
+  /* Pixel sprite using box-shadow technique */
+  .pixel-sprite {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: transparent;
+    box-shadow:
+      /* Head outline */
+      20px 0px #7c6ef0, 24px 0px #7c6ef0, 28px 0px #7c6ef0, 32px 0px #7c6ef0, 36px 0px #7c6ef0, 40px 0px #7c6ef0,
+      16px 4px #7c6ef0, 20px 4px #9b8ff5, 24px 4px #9b8ff5, 28px 4px #9b8ff5, 32px 4px #9b8ff5, 36px 4px #9b8ff5, 40px 4px #9b8ff5, 44px 4px #7c6ef0,
+      16px 8px #7c6ef0, 20px 8px #9b8ff5, 24px 8px #ffffff, 28px 8px #ffffff, 32px 8px #9b8ff5, 36px 8px #ffffff, 40px 8px #ffffff, 44px 8px #7c6ef0,
+      16px 12px #7c6ef0, 20px 12px #9b8ff5, 24px 12px #1a1a2e, 28px 12px #ffffff, 32px 12px #9b8ff5, 36px 12px #1a1a2e, 40px 12px #ffffff, 44px 12px #7c6ef0,
+      16px 16px #7c6ef0, 20px 16px #9b8ff5, 24px 16px #9b8ff5, 28px 16px #9b8ff5, 32px 16px #9b8ff5, 36px 16px #9b8ff5, 40px 16px #9b8ff5, 44px 16px #7c6ef0,
+      20px 20px #7c6ef0, 24px 20px #ff9999, 28px 20px #9b8ff5, 32px 20px #9b8ff5, 36px 20px #ff9999, 40px 20px #7c6ef0,
+      24px 24px #7c6ef0, 28px 24px #7c6ef0, 32px 24px #7c6ef0, 36px 24px #7c6ef0,
+      /* Body */
+      20px 28px #6366f1, 24px 28px #6366f1, 28px 28px #7c7ef5, 32px 28px #7c7ef5, 36px 28px #6366f1, 40px 28px #6366f1,
+      16px 32px #6366f1, 20px 32px #6366f1, 24px 32px #818cf8, 28px 32px #a5b4fc, 32px 32px #a5b4fc, 36px 32px #818cf8, 40px 32px #6366f1, 44px 32px #6366f1,
+      16px 36px #6366f1, 20px 36px #6366f1, 24px 36px #818cf8, 28px 36px #a5b4fc, 32px 36px #a5b4fc, 36px 36px #818cf8, 40px 36px #6366f1, 44px 36px #6366f1,
+      16px 40px #6366f1, 20px 40px #6366f1, 24px 40px #6366f1, 28px 40px #7c7ef5, 32px 40px #7c7ef5, 36px 40px #6366f1, 40px 40px #6366f1, 44px 40px #6366f1,
+      20px 44px #6366f1, 24px 44px #6366f1, 28px 44px #6366f1, 32px 44px #6366f1, 36px 44px #6366f1, 40px 44px #6366f1,
+      /* Left arm */
+      8px 30px #818cf8, 12px 30px #818cf8,
+      8px 34px #818cf8, 12px 34px #a5b4fc,
+      /* Right arm */
+      48px 30px #818cf8, 52px 30px #818cf8,
+      48px 34px #a5b4fc, 52px 34px #818cf8,
+      /* Left leg */
+      24px 48px #4f46e5, 28px 48px #4f46e5,
+      24px 52px #4f46e5, 28px 52px #4338ca,
+      24px 56px #4338ca, 28px 56px #4338ca,
+      /* Right leg */
+      32px 48px #4f46e5, 36px 48px #4f46e5,
+      32px 52px #4338ca, 36px 52px #4f46e5,
+      32px 56px #4338ca, 36px 56px #4338ca,
+      /* Tail */
+      44px 40px #9b8ff5, 48px 38px #9b8ff5, 52px 36px #a78bfa, 56px 34px #a78bfa, 58px 32px #c4b5fd,
+      /* Horn */
+      24px -4px #f9d423, 28px -4px #f9d423,
+      26px -8px #f9d423, 30px -8px #fbbf24,
+      28px -12px #fcd34d;
+  }
+
+  /* Working state - horn glow */
+  .pixel-sprite.working {
+    filter: drop-shadow(0 0 6px rgba(249, 212, 35, 0.6));
+  }
+  .pixel-sprite.error {
+    filter: drop-shadow(0 0 6px rgba(248, 113, 113, 0.5));
+  }
+  .pixel-sprite.celebrate {
+    filter: drop-shadow(0 0 8px rgba(167, 139, 250, 0.7));
+  }
+
+  /* Animations */
+  @keyframes breathe {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+  }
+  @keyframes blink {
+    0%, 92%, 100% { opacity: 1; }
+    95% { opacity: 0; }
+  }
+  @keyframes tailSway {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(8deg); }
+  }
+  @keyframes walkBob {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-3px) rotate(-2deg); }
+    75% { transform: translateY(-3px) rotate(2deg); }
+  }
+  @keyframes workPulse {
+    0%, 100% { filter: drop-shadow(0 0 4px rgba(249, 212, 35, 0.3)); }
+    50% { filter: drop-shadow(0 0 10px rgba(249, 212, 35, 0.8)); }
+  }
+  @keyframes talkBounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-1px) scale(1.02); }
+  }
+  @keyframes errorShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-3px); }
+    40% { transform: translateX(3px); }
+    60% { transform: translateX(-2px); }
+    80% { transform: translateX(2px); }
+  }
+  @keyframes celebrateJump {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    30% { transform: translateY(-12px) rotate(-5deg); }
+    50% { transform: translateY(-16px) rotate(0deg) scale(1.05); }
+    70% { transform: translateY(-12px) rotate(5deg); }
+  }
+  @keyframes sparkle {
+    0%, 100% { opacity: 0; transform: scale(0); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+
+  .idle-anim { animation: breathe 3s ease-in-out infinite, blink 4s ease-in-out infinite; }
+  .walk-anim { animation: walkBob 0.6s ease-in-out infinite; }
+  .work-anim { animation: workPulse 1.5s ease-in-out infinite, breathe 2s ease-in-out infinite; }
+  .talk-anim { animation: talkBounce 0.4s ease-in-out infinite; }
+  .error-anim { animation: errorShake 0.4s ease-in-out infinite; }
+  .celebrate-anim { animation: celebrateJump 0.8s ease-in-out infinite; }
+
+  /* Sparkles for celebrate */
+  .sparkle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #fbbf24;
+    border-radius: 50%;
+    animation: sparkle 1s ease-in-out infinite;
+  }
+  .sparkle:nth-child(2) { top: 10px; left: 10px; animation-delay: 0.2s; background: #a78bfa; }
+  .sparkle:nth-child(3) { top: 5px; right: 15px; animation-delay: 0.4s; background: #34d399; }
+  .sparkle:nth-child(4) { top: 20px; right: 5px; animation-delay: 0.6s; background: #f87171; }
+  .sparkle:nth-child(5) { bottom: 20px; left: 5px; animation-delay: 0.8s; background: #60a5fa; }
+
+  /* Speech bubble */
+  .speech-bubble {
+    position: absolute;
+    top: -8px;
+    right: -40px;
+    background: #1e1e2e;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 10px;
+    color: #a0a0a0;
+    white-space: nowrap;
+  }
+  .speech-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 12px;
+    width: 8px;
+    height: 8px;
+    background: #1e1e2e;
+    border-right: 1px solid #333;
+    border-bottom: 1px solid #333;
+    transform: rotate(45deg);
+  }
+
+  /* Error X eyes */
+  .error-eyes {
+    position: absolute;
+    top: 8px;
+    left: 24px;
+    color: #f87171;
+    font-size: 8px;
+    font-weight: bold;
+    letter-spacing: 16px;
+  }
+</style>
+
+<div class="pet-grid">
+
+  <!-- IDLE -->
+  <div class="pet-card">
+    <div class="label" style="color:#34d399;">IDLE · 空闲</div>
+    <div class="canvas">
+      <div class="pixel-sprite idle-anim"></div>
+    </div>
+  </div>
+
+  <!-- WALK -->
+  <div class="pet-card">
+    <div class="label" style="color:#60a5fa;">WALK · 行走</div>
+    <div class="canvas">
+      <div class="pixel-sprite walk-anim"></div>
+    </div>
+  </div>
+
+  <!-- WORKING -->
+  <div class="pet-card">
+    <div class="label" style="color:#fbbf24;">WORKING · 工作中</div>
+    <div class="canvas">
+      <div class="pixel-sprite working work-anim"></div>
+    </div>
+  </div>
+
+  <!-- TALKING -->
+  <div class="pet-card">
+    <div class="label" style="color:#a78bfa;">TALKING · 对话中</div>
+    <div class="canvas">
+      <div class="pixel-sprite talk-anim"></div>
+      <div class="speech-bubble">你好~</div>
+    </div>
+  </div>
+
+  <!-- ERROR -->
+  <div class="pet-card">
+    <div class="label" style="color:#f87171;">ERROR · 错误</div>
+    <div class="canvas">
+      <div class="pixel-sprite error error-anim"></div>
+    </div>
+  </div>
+
+  <!-- CELEBRATE -->
+  <div class="pet-card">
+    <div class="label" style="color:#fbbf24;">CELEBRATE · 庆祝</div>
+    <div class="canvas">
+      <div class="pixel-sprite celebrate celebrate-anim"></div>
+      <div class="sparkle" style="top:8px;left:8px;"></div>
+      <div class="sparkle" style="top:5px;right:15px;"></div>
+      <div class="sparkle" style="top:20px;right:5px;"></div>
+      <div class="sparkle" style="bottom:25px;left:5px;"></div>
+      <div class="sparkle" style="bottom:30px;right:10px;"></div>
+    </div>
+  </div>
+
+</div>
+
+<div style="text-align:center;margin-top:24px;color:#666;font-size:11px;">
+  使用 CSS box-shadow 逐像素绘制 · 透明背景 · 6 种状态独立动画 · 各部件可独立控制
+</div>

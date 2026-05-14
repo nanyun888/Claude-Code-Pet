@@ -1,0 +1,92 @@
+<h2>像素小人角色设计</h2>
+<p class="subtitle">透明背景 · 独立控制的肢体和眼神 · 复古像素风格</p>
+
+<div class="mockup">
+  <div class="mockup-header">Pixel Character - Component Breakdown</div>
+  <div class="mockup-body" style="padding:24px;">
+
+    <div style="display:flex;gap:32px;justify-content:center;flex-wrap:wrap;">
+
+      <!-- Character Preview -->
+      <div style="text-align:center;">
+        <div style="color:#666;font-size:11px;margin-bottom:12px;">角色预览（像素风格）</div>
+        <div style="background:repeating-conic-gradient(#1a1a2e 0% 25%, #16162a 0% 50%) 50%/16px 16px;border-radius:8px;padding:32px;display:inline-block;">
+          <!-- Pixel art character using CSS -->
+          <div style="position:relative;width:64px;height:80px;image-rendering:pixelated;">
+            <!-- Head -->
+            <div style="position:absolute;top:0;left:12px;width:40px;height:36px;background:#a78bfa;border-radius:4px;">
+              <!-- Eyes - independently animated -->
+              <div class="eye-left" style="position:absolute;top:12px;left:8px;width:8px;height:8px;background:white;border-radius:2px;">
+                <div style="position:absolute;top:2px;left:2px;width:4px;height:4px;background:#1a1a2e;border-radius:1px;"></div>
+              </div>
+              <div class="eye-right" style="position:absolute;top:12px;right:8px;width:8px;height:8px;background:white;border-radius:2px;">
+                <div style="position:absolute;top:2px;left:2px;width:4px;height:4px;background:#1a1a2e;border-radius:1px;"></div>
+              </div>
+              <!-- Mouth -->
+              <div style="position:absolute;bottom:6px;left:50%;transform:translateX(-50%);width:10px;height:4px;background:#1a1a2e;border-radius:0 0 2px 2px;"></div>
+              <!-- Antenna/horn -->
+              <div style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:4px;height:10px;background:#fbbf24;border-radius:2px 2px 0 0;"></div>
+              <div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);width:8px;height:6px;background:#fbbf24;border-radius:4px;"></div>
+            </div>
+            <!-- Body -->
+            <div style="position:absolute;top:34px;left:16px;width:32px;height:24px;background:#6366f1;border-radius:4px;"></div>
+            <!-- Left arm - independently animated -->
+            <div class="arm-left" style="position:absolute;top:36px;left:4px;width:14px;height:6px;background:#818cf8;border-radius:3px;transform-origin:right center;"></div>
+            <!-- Right arm - independently animated -->
+            <div class="arm-right" style="position:absolute;top:36px;right:4px;width:14px;height:6px;background:#818cf8;border-radius:3px;transform-origin:left center;"></div>
+            <!-- Left leg - independently animated -->
+            <div class="leg-left" style="position:absolute;bottom:0;left:18px;width:8px;height:18px;background:#4f46e5;border-radius:0 0 3px 3px;transform-origin:top center;"></div>
+            <!-- Right leg - independently animated -->
+            <div class="leg-right" style="position:absolute;bottom:0;right:18px;width:8px;height:18px;background:#4f46e5;border-radius:0 0 3px 3px;transform-origin:top center;"></div>
+            <!-- Tail -->
+            <div style="position:absolute;top:40px;right:-6px;width:16px;height:6px;background:#a78bfa;border-radius:0 3px 3px 0;transform-origin:left center;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Component Map -->
+      <div style="min-width:240px;">
+        <div style="color:#a78bfa;font-weight:bold;font-size:12px;margin-bottom:12px;">可独立控制的部件</div>
+        <table style="width:100%;color:#888;font-size:11px;border-collapse:collapse;">
+          <tr style="border-bottom:1px solid #222;">
+            <td style="padding:6px 8px;color:#fbbf24;">👁 Eyes</td>
+            <td style="padding:6px 8px;">瞳孔位置、眨眼、瞪大</td>
+          </tr>
+          <tr style="border-bottom:1px solid #222;">
+            <td style="padding:6px 8px;color:#a78bfa;">👄 Mouth</td>
+            <td style="padding:6px 8px;">说话张合、微笑、惊讶O型</td>
+          </tr>
+          <tr style="border-bottom:1px solid #222;">
+            <td style="padding:6px 8px;color:#818cf8;">💪 Arms</td>
+            <td style="padding:6px 8px;">挥手、搓手、举手欢呼</td>
+          </tr>
+          <tr style="border-bottom:1px solid #222;">
+            <td style="padding:6px 8px;color:#4f46e5;">🦵 Legs</td>
+            <td style="padding:6px 8px;">行走踏步、跳跃、站立</td>
+          </tr>
+          <tr style="border-bottom:1px solid #222;">
+            <td style="padding:6px 8px;color:#a78bfa;">🐉 Tail</td>
+            <td style="padding:6px 8px;">摇摆、下垂（情绪）、翘起（开心）</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 8px;color:#fbbf24;">✨ Horn</td>
+            <td style="padding:6px 8px;">发光（工作中）、变色（状态）</td>
+          </tr>
+        </table>
+
+        <div style="margin-top:16px;border-top:1px solid #333;padding-top:12px;">
+          <div style="color:#34d399;font-weight:bold;font-size:11px;margin-bottom:6px;">Rendering</div>
+          <div style="color:#666;font-size:10px;line-height:1.6;">
+            • 纯 CSS 实现，无图片依赖<br>
+            • 每个部件独立 div + CSS transform<br>
+            • 透明背景（checkerboard 表示）<br>
+            • image-rendering: pixelated 保持锐利<br>
+            • 各部件通过 CSS animation 独立驱动
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>

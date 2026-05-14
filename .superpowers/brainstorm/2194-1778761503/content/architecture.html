@@ -1,0 +1,69 @@
+<h2>系统架构</h2>
+<p class="subtitle">Electron 主进程 + 渲染进程 + Claude Code Hooks 事件总线</p>
+
+<div class="mockup">
+  <div class="mockup-header">Claude Code Pet - Architecture</div>
+  <div class="mockup-body" style="padding:24px;font-family:monospace;font-size:13px;line-height:1.8;">
+
+    <div style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap;">
+
+      <!-- Electron App -->
+      <div style="border:2px solid #6366f1;border-radius:12px;padding:16px;min-width:280px;flex:1;max-width:340px;">
+        <div style="color:#6366f1;font-weight:bold;font-size:14px;margin-bottom:12px;">Electron App</div>
+
+        <div style="border:1px solid #444;border-radius:8px;padding:10px;margin-bottom:10px;background:#1a1a2e;">
+          <div style="color:#a78bfa;font-size:11px;font-weight:bold;">Main Process</div>
+          <div style="color:#888;font-size:11px;margin-top:4px;">
+            ├─ TrayManager (系统托盘)<br>
+            ├─ ShortcutManager (全局快捷键)<br>
+            ├─ HookBridge (Claude Code 事件)<br>
+            ├─ ClaudeAPIClient (AI 对话)<br>
+            └─ PetController (状态机)
+          </div>
+        </div>
+
+        <div style="border:1px solid #444;border-radius:8px;padding:10px;background:#1a1a2e;">
+          <div style="color:#34d399;font-size:11px;font-weight:bold;">Renderer Process</div>
+          <div style="color:#888;font-size:11px;margin-top:4px;">
+            ├─ PetView (角色渲染 + 动画)<br>
+            ├─ MovementEngine (行走/物理)<br>
+            ├─ ChatBubble (对话气泡 UI)<br>
+            └─ AnimationFSM (动画状态机)
+          </div>
+        </div>
+      </div>
+
+      <!-- External -->
+      <div style="border:2px solid #f59e0b;border-radius:12px;padding:16px;min-width:200px;max-width:240px;">
+        <div style="color:#f59e0b;font-weight:bold;font-size:14px;margin-bottom:12px;">External</div>
+
+        <div style="border:1px solid #444;border-radius:8px;padding:10px;margin-bottom:10px;background:#1a1a2e;">
+          <div style="color:#fbbf24;font-size:11px;font-weight:bold;">Claude Code</div>
+          <div style="color:#888;font-size:11px;margin-top:4px;">
+            ├─ Hooks → 事件推送<br>
+            └─ CLI → 状态查询
+          </div>
+        </div>
+
+        <div style="border:1px solid #444;border-radius:8px;padding:10px;background:#1a1a2e;">
+          <div style="color:#fbbf24;font-size:11px;font-weight:bold;">Claude API</div>
+          <div style="color:#888;font-size:11px;margin-top:4px;">
+            └─ Messages API → 对话
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Data flow -->
+    <div style="margin-top:20px;border-top:1px solid #333;padding-top:16px;">
+      <div style="color:#6366f1;font-weight:bold;font-size:12px;margin-bottom:8px;">Data Flow</div>
+      <div style="color:#888;font-size:11px;line-height:2;">
+        <span style="color:#fbbf24;">Claude Code Hook</span> → HookBridge (IPC) → <span style="color:#a78bfa;">PetController</span> → AnimationFSM → <span style="color:#34d399;">PetView</span><br>
+        <span style="color:#fbbf24;">User Click</span> → ChatBubble → <span style="color:#a78bfa;">ClaudeAPIClient</span> → Response → ChatBubble (显示)<br>
+        <span style="color:#fbbf24;">Hotkey</span> → ShortcutManager → <span style="color:#a78bfa;">PetController</span> → show/hide pet
+      </div>
+    </div>
+
+  </div>
+</div>

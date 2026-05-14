@@ -1,0 +1,364 @@
+<h2>像素小人 · 可爱加强版</h2>
+<p class="subtitle">大头比例 · 大眼睛 · 腮红 · 圆润造型 · Q 弹动画</p>
+
+<style>
+  .pet-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .pet-card {
+    background: #0f0f1a;
+    border: 1px solid #2a2a3e;
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .pet-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-conic-gradient(#141420 0% 25%, #0f0f1a 0% 50%) 50%/12px 12px;
+    opacity: 0.4;
+  }
+  .pet-card .label {
+    position: relative;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+  }
+  .pet-card .canvas {
+    position: relative;
+    width: 140px;
+    height: 160px;
+    margin: 0 auto;
+    image-rendering: pixelated;
+  }
+
+  /* === CUTE PIXEL SPRITE === */
+  /* Bigger head (60%), smaller body, big round eyes, chubby cheeks */
+  .sprite {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: transparent;
+  }
+
+  .sprite-head {
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px; height: 4px;
+    background: transparent;
+    box-shadow:
+      /* Head - rounder, bigger */
+      28px 0px #8b7ff7, 32px 0px #8b7ff7, 36px 0px #8b7ff7, 40px 0px #8b7ff7, 44px 0px #8b7ff7, 48px 0px #8b7ff7, 52px 0px #8b7ff7,
+      24px 4px #8b7ff7, 28px 4px #a99df9, 32px 4px #a99df9, 36px 4px #a99df9, 40px 4px #a99df9, 44px 4px #a99df9, 48px 4px #a99df9, 52px 4px #a99df9, 56px 4px #8b7ff7,
+      20px 8px #8b7ff7, 24px 8px #a99df9, 28px 8px #b8b0fb, 32px 8px #b8b0fb, 36px 8px #a99df9, 40px 8px #a99df9, 44px 8px #b8b0fb, 48px 8px #b8b0fb, 52px 8px #a99df9, 56px 8px #a99df9, 60px 8px #8b7ff7,
+      /* Big cute eyes - white part */
+      20px 12px #8b7ff7, 24px 12px #a99df9, 28px 12px #ffffff, 32px 12px #ffffff, 36px 12px #ffffff, 40px 12px #a99df9, 44px 12px #ffffff, 48px 12px #ffffff, 52px 12px #ffffff, 56px 12px #a99df9, 60px 12px #8b7ff7,
+      20px 16px #8b7ff7, 24px 16px #a99df9, 28px 16px #ffffff, 32px 16px #2d2b55, 36px 16px #ffffff, 40px 16px #a99df9, 44px 16px #ffffff, 48px 16px #2d2b55, 52px 16px #ffffff, 56px 16px #a99df9, 60px 16px #8b7ff7,
+      /* Eye highlights (sparkle in eyes!) */
+      20px 20px #8b7ff7, 24px 20px #a99df9, 28px 20px #ffffff, 32px 20px #ffffff, 36px 20px #ffffff, 40px 20px #a99df9, 44px 20px #ffffff, 48px 20px #ffffff, 52px 20px #ffffff, 56px 20px #a99df9, 60px 20px #8b7ff7,
+      20px 24px #8b7ff7, 24px 24px #a99df9, 28px 24px #a99df9, 32px 24px #a99df9, 36px 24px #a99df9, 40px 24px #a99df9, 44px 24px #a99df9, 48px 24px #a99df9, 52px 24px #a99df9, 56px 24px #a99df9, 60px 24px #8b7ff7,
+      /* Blush cheeks */
+      20px 28px #8b7ff7, 24px 28px #ffb3b3, 28px 28px #ffb3b3, 32px 28px #a99df9, 36px 28px #a99df9, 40px 28px #a99df9, 44px 28px #a99df9, 48px 28px #a99df9, 52px 28px #ffb3b3, 56px 28px #ffb3b3, 60px 28px #8b7ff7,
+      /* Cute small mouth */
+      24px 32px #8b7ff7, 28px 32px #a99df9, 32px 32px #a99df9, 36px 32px #a99df9, 40px 32px #e88a8a, 44px 32px #e88a8a, 48px 32px #a99df9, 52px 32px #a99df9, 56px 32px #8b7ff7,
+      /* Chin */
+      28px 36px #8b7ff7, 32px 36px #8b7ff7, 36px 36px #8b7ff7, 40px 36px #8b7ff7, 44px 36px #8b7ff7, 48px 36px #8b7ff7, 52px 36px #8b7ff7,
+      /* Little ears/horns */
+      20px 0px #c4b5fd, 24px -4px #c4b5fd,
+      56px 0px #c4b5fd, 60px -4px #c4b5fd,
+      /* Tiny horn on top */
+      36px -4px #fcd34d, 40px -4px #fcd34d,
+      38px -8px #fde68a;
+  }
+
+  .sprite-body {
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px; height: 4px;
+    background: transparent;
+    box-shadow:
+      /* Small chubby body */
+      32px 40px #7c6ef0, 36px 40px #7c6ef0, 40px 40px #8b82f3, 44px 40px #7c6ef0, 48px 40px #7c6ef0,
+      28px 44px #7c6ef0, 32px 44px #8b82f3, 36px 44px #9a94f6, 40px 44px #9a94f6, 44px 44px #8b82f3, 48px 44px #7c6ef0, 52px 44px #7c6ef0,
+      28px 48px #7c6ef0, 32px 48px #8b82f3, 36px 48px #9a94f6, 40px 48px #9a94f6, 44px 48px #8b82f3, 48px 48px #7c6ef0, 52px 48px #7c6ef0,
+      32px 52px #7c6ef0, 36px 52px #7c6ef0, 40px 52px #8b82f3, 44px 52px #7c6ef0, 48px 52px #7c6ef0,
+      /* Belly highlight */
+      36px 44px #b8b0fb, 40px 44px #b8b0fb,
+      36px 48px #b8b0fb, 40px 48px #b8b0fb;
+  }
+
+  .sprite-limbs {
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px; height: 4px;
+    background: transparent;
+    box-shadow:
+      /* Tiny stubby arms */
+      20px 42px #9a94f6, 24px 42px #9a94f6, 28px 44px #9a94f6,
+      52px 42px #9a94f6, 56px 42px #9a94f6, 60px 44px #9a94f6,
+      /* Tiny stubby legs */
+      32px 56px #6366f1, 36px 56px #6366f1,
+      32px 60px #5558e8, 36px 60px #5558e8,
+      44px 56px #6366f1, 48px 56px #6366f1,
+      44px 60px #5558e8, 48px 60px #5558e8,
+      /* Little tail */
+      52px 48px #a99df9, 56px 46px #a99df9, 60px 44px #c4b5fd, 64px 42px #c4b5fd;
+  }
+
+  /* Eye sparkle dots */
+  .eye-sparkle {
+    position: absolute;
+    width: 3px; height: 3px;
+    background: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 0 2px #fff;
+  }
+
+  /* Animations */
+  @keyframes breathe {
+    0%, 100% { transform: translateY(0) scaleY(1); }
+    50% { transform: translateY(-3px) scaleY(1.02); }
+  }
+  @keyframes blink {
+    0%, 90%, 100% { transform: scaleY(1); }
+    94% { transform: scaleY(0.1); }
+    96% { transform: scaleY(1); }
+  }
+  @keyframes tailWag {
+    0%, 100% { transform: rotate(0deg) translateX(0); }
+    25% { transform: rotate(10deg) translateX(2px); }
+    75% { transform: rotate(-5deg) translateX(-1px); }
+  }
+  @keyframes earTwitch {
+    0%, 85%, 100% { transform: rotate(0deg); }
+    90% { transform: rotate(-8deg); }
+    95% { transform: rotate(5deg); }
+  }
+  @keyframes walkBounce {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-5px) rotate(-3deg); }
+    50% { transform: translateY(0) rotate(0deg); }
+    75% { transform: translateY(-5px) rotate(3deg); }
+  }
+  @keyframes walkLeg {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
+  @keyframes workGlow {
+    0%, 100% { filter: drop-shadow(0 0 3px rgba(252, 211, 77, 0.3)); }
+    50% { filter: drop-shadow(0 0 12px rgba(252, 211, 77, 0.9)); }
+  }
+  @keyframes workArms {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-2px) rotate(-10deg); }
+    75% { transform: translateY(-2px) rotate(10deg); }
+  }
+  @keyframes talkMouth {
+    0%, 40% { transform: scaleY(1); }
+    20% { transform: scaleY(1.5); }
+    60% { transform: scaleY(0.8); }
+    80%, 100% { transform: scaleY(1); }
+  }
+  @keyframes talkHead {
+    0%, 100% { transform: rotate(0deg); }
+    30% { transform: rotate(-3deg); }
+    70% { transform: rotate(3deg); }
+  }
+  @keyframes errorShake {
+    0%, 100% { transform: translateX(0); }
+    15% { transform: translateX(-4px) rotate(-2deg); }
+    30% { transform: translateX(4px) rotate(2deg); }
+    45% { transform: translateX(-3px) rotate(-1deg); }
+    60% { transform: translateX(3px) rotate(1deg); }
+    75% { transform: translateX(-1px); }
+  }
+  @keyframes errorBlush {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  @keyframes celebrateJump {
+    0%, 100% { transform: translateY(0) scale(1); }
+    20% { transform: translateY(-18px) scale(1.05); }
+    40% { transform: translateY(-22px) scale(1.08) rotate(-3deg); }
+    60% { transform: translateY(-18px) scale(1.05) rotate(3deg); }
+    80% { transform: translateY(-5px) scale(1.02); }
+  }
+  @keyframes sparkleFloat {
+    0% { opacity: 0; transform: translateY(0) scale(0) rotate(0deg); }
+    50% { opacity: 1; transform: translateY(-10px) scale(1) rotate(180deg); }
+    100% { opacity: 0; transform: translateY(-20px) scale(0) rotate(360deg); }
+  }
+  @keyframes heartFloat {
+    0% { opacity: 0; transform: translateY(0) scale(0); }
+    30% { opacity: 1; transform: translateY(-8px) scale(1); }
+    100% { opacity: 0; transform: translateY(-24px) scale(0.5); }
+  }
+
+  .idle-anim .sprite-head { animation: breathe 3s ease-in-out infinite; }
+  .idle-anim .sprite-body { animation: breathe 3s ease-in-out infinite; }
+  .idle-anim .sprite-limbs { animation: breathe 3s ease-in-out infinite; }
+  .idle-anim .tail-part { animation: tailWag 2s ease-in-out infinite; }
+  .idle-anim .ear-part { animation: earTwitch 4s ease-in-out infinite; }
+
+  .walk-anim .whole-pet { animation: walkBounce 0.5s ease-in-out infinite; }
+
+  .work-anim .whole-pet { animation: workGlow 1.5s ease-in-out infinite; }
+  .work-anim .arm-part { animation: workArms 0.4s ease-in-out infinite; }
+
+  .talk-anim .head-part { animation: talkHead 0.8s ease-in-out infinite; }
+  .talk-anim .mouth-part { animation: talkMouth 0.3s ease-in-out infinite; }
+
+  .error-anim .whole-pet { animation: errorShake 0.5s ease-in-out infinite; }
+
+  .celebrate-anim .whole-pet { animation: celebrateJump 0.9s ease-in-out infinite; }
+
+  .sparkle {
+    position: absolute;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    animation: sparkleFloat 1.2s ease-out infinite;
+  }
+  .heart {
+    position: absolute;
+    font-size: 10px;
+    animation: heartFloat 1.5s ease-out infinite;
+  }
+
+  /* Speech bubble */
+  .speech-bubble {
+    position: absolute;
+    top: -12px;
+    right: -50px;
+    background: #1e1e2e;
+    border: 1px solid #444;
+    border-radius: 12px;
+    padding: 5px 10px;
+    font-size: 11px;
+    color: #c9d1d9;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  .speech-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 14px;
+    width: 10px;
+    height: 10px;
+    background: #1e1e2e;
+    border-right: 1px solid #444;
+    border-bottom: 1px solid #444;
+    transform: rotate(45deg);
+  }
+</style>
+
+<div class="pet-grid">
+
+  <!-- IDLE -->
+  <div class="pet-card">
+    <div class="label" style="color:#34d399;">IDLE · 空闲</div>
+    <div class="canvas idle-anim">
+      <div style="position:relative;width:80px;height:72px;margin:20px auto 0;">
+        <div class="sprite-head ear-part" style="transform-origin:20px 4px;"></div>
+        <div class="sprite-head" style="left:0;top:0;"></div>
+        <div class="sprite-body"></div>
+        <div class="sprite-limbs tail-part" style="transform-origin:52px 48px;"></div>
+        <div class="eye-sparkle" style="top:16px;left:32px;"></div>
+        <div class="eye-sparkle" style="top:16px;left:50px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WALK -->
+  <div class="pet-card">
+    <div class="label" style="color:#60a5fa;">WALK · 行走</div>
+    <div class="canvas walk-anim">
+      <div class="whole-pet" style="position:relative;width:80px;height:72px;margin:20px auto 0;">
+        <div class="sprite-head"></div>
+        <div class="sprite-body"></div>
+        <div class="sprite-limbs"></div>
+        <div class="eye-sparkle" style="top:16px;left:32px;"></div>
+        <div class="eye-sparkle" style="top:16px;left:50px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WORKING -->
+  <div class="pet-card">
+    <div class="label" style="color:#fbbf24;">WORKING · 忙碌</div>
+    <div class="canvas work-anim">
+      <div class="whole-pet" style="position:relative;width:80px;height:72px;margin:20px auto 0;">
+        <div class="sprite-head"></div>
+        <div class="sprite-body"></div>
+        <div class="sprite-limbs arm-part"></div>
+        <div class="eye-sparkle" style="top:16px;left:32px;"></div>
+        <div class="eye-sparkle" style="top:16px;left:50px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TALKING -->
+  <div class="pet-card">
+    <div class="label" style="color:#a78bfa;">TALKING · 对话</div>
+    <div class="canvas talk-anim">
+      <div style="position:relative;width:80px;height:72px;margin:20px auto 0;">
+        <div class="head-part">
+          <div class="sprite-head"></div>
+          <div class="eye-sparkle" style="top:16px;left:32px;"></div>
+          <div class="eye-sparkle" style="top:16px;left:50px;"></div>
+        </div>
+        <div class="sprite-body"></div>
+        <div class="sprite-limbs"></div>
+        <div class="speech-bubble">你好呀~ ✨</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ERROR -->
+  <div class="pet-card">
+    <div class="label" style="color:#f87171;">ERROR · 出错啦</div>
+    <div class="canvas error-anim">
+      <div class="whole-pet" style="position:relative;width:80px;height:72px;margin:20px auto 0;">
+        <div class="sprite-head"></div>
+        <div class="sprite-body"></div>
+        <div class="sprite-limbs"></div>
+        <!-- X eyes overlay -->
+        <div style="position:absolute;top:14px;left:28px;color:#ff6b6b;font-size:10px;font-weight:bold;text-shadow:0 0 4px rgba(255,100,100,0.6);">✕ ✕</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CELEBRATE -->
+  <div class="pet-card">
+    <div class="label" style="color:#fbbf24;">CELEBRATE · 耶!</div>
+    <div class="canvas celebrate-anim">
+      <div class="whole-pet" style="position:relative;width:80px;height:72px;margin:20px auto 0;">
+        <div class="sprite-head"></div>
+        <div class="sprite-body"></div>
+        <div class="sprite-limbs"></div>
+        <div class="eye-sparkle" style="top:16px;left:32px;"></div>
+        <div class="eye-sparkle" style="top:16px;left:50px;"></div>
+        <!-- Sparkles & hearts -->
+        <div class="sparkle" style="top:0;left:10px;background:#fcd34d;animation-delay:0s;"></div>
+        <div class="sparkle" style="top:-5px;right:10px;background:#a78bfa;animation-delay:0.3s;"></div>
+        <div class="sparkle" style="top:15px;right:0px;background:#34d399;animation-delay:0.6s;"></div>
+        <div class="sparkle" style="bottom:15px;left:5px;background:#f87171;animation-delay:0.9s;"></div>
+        <div class="heart" style="top:-5px;left:25px;animation-delay:0.2s;">💜</div>
+        <div class="heart" style="top:-8px;right:20px;animation-delay:0.7s;">✨</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="text-align:center;margin-top:20px;color:#555;font-size:11px;">
+  大头 2:1 比例 · 圆润轮廓 · 腮红 · 眼睛高光 · 小耳朵 · Q 弹动画 · 透明背景
+</div>

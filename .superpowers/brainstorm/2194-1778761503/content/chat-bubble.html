@@ -1,0 +1,90 @@
+<h2>对话气泡 & AI 对话</h2>
+<p class="subtitle">点击宠物呼出对话框，调用 Claude API 进行对话</p>
+
+<div class="mockup">
+  <div class="mockup-header">Chat Bubble UI</div>
+  <div class="mockup-body" style="padding:24px;">
+
+    <!-- Visual mockup of the chat bubble -->
+    <div style="display:flex;justify-content:center;gap:40px;flex-wrap:wrap;">
+
+      <!-- State 1: Idle with hint -->
+      <div style="text-align:center;">
+        <div style="color:#666;font-size:11px;margin-bottom:8px;">空闲状态 - 提示气泡</div>
+        <div style="position:relative;display:inline-block;">
+          <!-- Pet body placeholder -->
+          <div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:36px;">
+            🐉
+          </div>
+          <!-- Hint bubble -->
+          <div style="position:absolute;top:-30px;left:50%;transform:translateX(-50%);background:#1e1e2e;color:#a0a0a0;padding:4px 10px;border-radius:12px;font-size:11px;white-space:nowrap;border:1px solid #333;">
+            点我聊天 💬
+          </div>
+        </div>
+      </div>
+
+      <!-- State 2: Chat open -->
+      <div style="text-align:center;">
+        <div style="color:#666;font-size:11px;margin-bottom:8px;">对话中</div>
+        <div style="display:inline-flex;flex-direction:column;align-items:center;gap:8px;">
+          <!-- Chat panel -->
+          <div style="background:#1e1e2e;border:1px solid #333;border-radius:12px;padding:12px;width:260px;text-align:left;">
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <!-- User message -->
+              <div style="align-self:flex-end;background:#6366f1;color:white;padding:6px 12px;border-radius:12px 12px 4px 12px;font-size:12px;max-width:80%;">
+                帮我写个快速排序
+              </div>
+              <!-- AI response -->
+              <div style="align-self:flex-start;background:#2a2a3e;color:#c9d1d9;padding:6px 12px;border-radius:12px 12px 12px 4px;font-size:12px;max-width:80%;">
+                好的！这是一个 TypeScript 实现...
+              </div>
+              <!-- Typing indicator -->
+              <div style="align-self:flex-start;color:#666;font-size:10px;padding:4px 8px;">
+                <span style="animation:blink 1s infinite">●</span>
+                <span style="animation:blink 1s infinite 0.2s">●</span>
+                <span style="animation:blink 1s infinite 0.4s">●</span>
+                思考中...
+              </div>
+            </div>
+            <!-- Input -->
+            <div style="margin-top:8px;border-top:1px solid #333;padding-top:8px;display:flex;gap:6px;">
+              <input style="flex:1;background:#0d1117;border:1px solid #333;border-radius:8px;padding:6px 10px;color:#c9d1d9;font-size:11px;outline:none;" placeholder="输入消息..." disabled>
+              <button style="background:#6366f1;color:white;border:none;border-radius:8px;padding:6px 12px;font-size:11px;cursor:pointer;">发送</button>
+            </div>
+          </div>
+          <!-- Pet below chat -->
+          <div style="width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:28px;">
+            🐉
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Architecture -->
+    <div style="margin-top:24px;border-top:1px solid #333;padding-top:16px;">
+      <div style="color:#a78bfa;font-weight:bold;font-size:12px;margin-bottom:8px;">对话流程</div>
+      <div style="color:#888;font-size:11px;line-height:2;">
+        1. 用户点击宠物 → 显示对话面板（宠物切换到 TALKING 状态）<br>
+        2. 用户输入消息 → Renderer → IPC → Main Process<br>
+        3. Main Process 调用 Claude API（流式响应）<br>
+        4. 响应通过 IPC 推送到 Renderer → 逐字显示在气泡中<br>
+        5. 对话结束 / 超时 30s 无操作 → 气泡收起 → 回 IDLE
+      </div>
+    </div>
+
+    <div style="margin-top:16px;border-top:1px solid #333;padding-top:16px;">
+      <div style="color:#fbbf24;font-weight:bold;font-size:12px;margin-bottom:8px;">API 配置</div>
+      <div style="background:#0d1117;border-radius:8px;padding:12px;color:#c9d1d9;font-family:monospace;font-size:11px;">
+<pre style="margin:0;">// config.json
+{
+  "apiKey": "sk-ant-...",        // Claude API Key
+  "model": "claude-sonnet-4-6", // 默认模型
+  "systemPrompt": "你是一个编程助手...", // 系统提示词
+  "maxTokens": 1024
+}</pre>
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,105 @@
+<h2>动画状态机</h2>
+<p class="subtitle">奇幻小生物的 6 种状态及转换规则</p>
+
+<div class="mockup">
+  <div class="mockup-header">Animation State Machine</div>
+  <div class="mockup-body" style="padding:24px;font-family:monospace;font-size:13px;">
+
+    <!-- State nodes -->
+    <div style="display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin-bottom:24px;">
+
+      <div style="border:2px solid #34d399;border-radius:50%;width:100px;height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <div style="font-size:28px;">😴</div>
+        <div style="color:#34d399;font-size:11px;font-weight:bold;">IDLE</div>
+        <div style="color:#666;font-size:9px;">空闲</div>
+      </div>
+
+      <div style="border:2px solid #60a5fa;border-radius:50%;width:100px;height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <div style="font-size:28px;">🚶</div>
+        <div style="color:#60a5fa;font-size:11px;font-weight:bold;">WALK</div>
+        <div style="color:#666;font-size:9px;">行走</div>
+      </div>
+
+      <div style="border:2px solid #fbbf24;border-radius:50%;width:100px;height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <div style="font-size:28px;">⚡</div>
+        <div style="color:#fbbf24;font-size:11px;font-weight:bold;">WORKING</div>
+        <div style="color:#666;font-size:9px;">工作中</div>
+      </div>
+
+      <div style="border:2px solid #a78bfa;border-radius:50%;width:100px;height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <div style="font-size:28px;">💬</div>
+        <div style="color:#a78bfa;font-size:11px;font-weight:bold;">TALKING</div>
+        <div style="color:#666;font-size:9px;">对话中</div>
+      </div>
+
+      <div style="border:2px solid #f87171;border-radius:50%;width:100px;height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <div style="font-size:28px;">❌</div>
+        <div style="color:#f87171;font-size:11px;font-weight:bold;">ERROR</div>
+        <div style="color:#666;font-size:9px;">错误</div>
+      </div>
+
+      <div style="border:2px solid #34d399;border-radius:50%;width:100px;height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+        <div style="font-size:28px;">✨</div>
+        <div style="color:#34d399;font-size:11px;font-weight:bold;">CELEBRATE</div>
+        <div style="color:#666;font-size:9px;">庆祝</div>
+      </div>
+
+    </div>
+
+    <!-- Transitions table -->
+    <div style="border-top:1px solid #333;padding-top:16px;">
+      <div style="color:#a78bfa;font-weight:bold;font-size:12px;margin-bottom:8px;">State Transitions</div>
+      <table style="width:100%;color:#888;font-size:11px;border-collapse:collapse;">
+        <tr style="border-bottom:1px solid #222;">
+          <td style="padding:4px 8px;color:#34d399;">IDLE</td>
+          <td style="padding:4px 8px;">→</td>
+          <td style="padding:4px 8px;">WALK</td>
+          <td style="padding:4px 8px;color:#666;">随机定时器触发 (8-15s)</td>
+        </tr>
+        <tr style="border-bottom:1px solid #222;">
+          <td style="padding:4px 8px;color:#34d399;">IDLE</td>
+          <td style="padding:4px 8px;">→</td>
+          <td style="padding:4px 8px;">WORKING</td>
+          <td style="padding:4px 8px;color:#666;">Hook: PreToolUse / PostToolUse</td>
+        </tr>
+        <tr style="border-bottom:1px solid #222;">
+          <td style="padding:4px 8px;color:#60a5fa;">WALK</td>
+          <td style="padding:4px 8px;">→</td>
+          <td style="padding:4px 8px;">IDLE</td>
+          <td style="padding:4px 8px;color:#666;">到达目标点 / 被拖拽放下</td>
+        </tr>
+        <tr style="border-bottom:1px solid #222;">
+          <td style="padding:4px 8px;color:#fbbf24;">WORKING</td>
+          <td style="padding:4px 8px;">→</td>
+          <td style="padding:4px 8px;">CELEBRATE</td>
+          <td style="padding:4px 8px;color:#666;">Hook: Stop (成功)</td>
+        </tr>
+        <tr style="border-bottom:1px solid #222;">
+          <td style="padding:4px 8px;color:#fbbf24;">WORKING</td>
+          <td style="padding:4px 8px;">→</td>
+          <td style="padding:4px 8px;">ERROR</td>
+          <td style="padding:4px 8px;color:#666;">Hook: 错误事件</td>
+        </tr>
+        <tr style="border-bottom:1px solid #222;">
+          <td style="padding:4px 8px;color:#a78bfa;">TALKING</td>
+          <td style="padding:4px 8px;">→</td>
+          <td style="padding:4px 8px;">IDLE</td>
+          <td style="padding:4px 8px;color:#666;">对话结束 / 气泡超时</td>
+        </tr>
+        <tr style="border-bottom:1px solid #222;">
+          <td style="padding:4px 8px;color:#f87171;">ERROR</td>
+          <td style="padding:4px 8px;">→</td>
+          <td style="padding:4px 8px;">IDLE</td>
+          <td style="padding:4px 8px;color:#666;">3s 后自动恢复</td>
+        </tr>
+        <tr>
+          <td style="padding:4px 8px;color:#34d399;">CELEBRATE</td>
+          <td style="padding:4px 8px;">→</td>
+          <td style="padding:4px 8px;">IDLE</td>
+          <td style="padding:4px 8px;color:#666;">庆祝动画播完 (2s)</td>
+        </tr>
+      </table>
+    </div>
+
+  </div>
+</div>
