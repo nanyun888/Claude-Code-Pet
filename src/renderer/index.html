@@ -418,16 +418,42 @@
     // Walk animation — renderer drives window movement
     window.petBridge.onWalkTarget((tx, ty) => {
       const speed = 1.5;
+      const maxSteps = 600; // ~10s at 60fps, prevent infinite loop
+      let steps = 0;
+      let lastDist = Infinity;
+      let stuckCount = 0;
+
       function walkStep() {
+        steps++;
+        if (steps > maxSteps) {
+          emitCore('idle');
+          return;
+        }
+
         const pos = window.petBridge.getPosition();
         const dx = tx - pos.x;
         const dy = ty - pos.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
+
         if (dist < 3) {
           window.petBridge.move(Math.round(tx), Math.round(ty));
           emitCore('idle');
           return;
         }
+
+        // Detect if window is stuck (not moving)
+        if (Math.abs(dist - lastDist) < 0.5) {
+          stuckCount++;
+          if (stuckCount > 30) {
+            // Window can't move, stop walk animation
+            emitCore('idle');
+            return;
+          }
+        } else {
+          stuckCount = 0;
+        }
+        lastDist = dist;
+
         const step = Math.min(speed, dist);
         const nx = Math.round(pos.x + (dx / dist) * step);
         const ny = Math.round(pos.y + (dy / dist) * step);

@@ -272,13 +272,15 @@
       if (reply) {
         addMsg(reply, 'pet');
       } else if (data.error) {
-        addMsg('出错了: ' + (data.error.message || data.error.type || '未知错误'), 'pet');
+        console.error('[Chat] API error:', data.error);
+        addMsg('出错了，请检查 API Key 和模型配置~', 'pet');
       } else {
         addMsg('没有收到回复...', 'pet');
       }
     } catch (e) {
+      console.error('[Chat] Request failed:', e);
       typing.classList.remove('active');
-      addMsg('连接失败了... ' + (e.message || ''), 'pet');
+      addMsg('连接失败了，请检查网络和配置~', 'pet');
     }
 
     sendBtn.disabled = false;

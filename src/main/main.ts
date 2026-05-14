@@ -14,6 +14,7 @@ let walkTimer: ReturnType<typeof setTimeout> | null = null;
 let walkAnimFrame: ReturnType<typeof setInterval> | null = null;
 let walkTarget: { x: number; y: number } | null = null;
 let currentState = 'idle';
+let walkEnabled = true;
 
 // Config
 const configPath = path.join(app.getPath('userData'), 'pet-config.json');
@@ -211,12 +212,23 @@ ipcMain.on('pet:context-menu', () => {
     { label: '聊天', click: () => createChatWindow() },
     { label: '设置...', click: () => createSettingsWindow() },
     { type: 'separator' },
-    { label: '切换状态', enabled: false },
-    { label: '  待机', click: () => mainWindow?.webContents.send('state:change', 'idle') },
-    { label: '  工作中', click: () => mainWindow?.webContents.send('state:change', 'working') },
-    { label: '  说话', click: () => mainWindow?.webContents.send('state:change', 'talking') },
-    { label: '  庆祝', click: () => mainWindow?.webContents.send('state:change', 'celebrate') },
-    { label: '  错误', click: () => mainWindow?.webContents.send('state:change', 'error') },
+    {
+      label: '切换状态',
+      submenu: [
+        { label: '待机', click: () => mainWindow?.webContents.send('state:change', 'idle') },
+        { label: '工作中', click: () => mainWindow?.webContents.send('state:change', 'working') },
+        { label: '说话', click: () => mainWindow?.webContents.send('state:change', 'talking') },
+        { label: '庆祝', click: () => mainWindow?.webContents.send('state:change', 'celebrate') },
+        { label: '错误', click: () => mainWindow?.webContents.send('state:change', 'error') },
+      ],
+    },
+    {
+      label: '漫步',
+      submenu: [
+        { label: walkEnabled ? '✓ 开启' : '  开启', click: () => { walkEnabled = true; scheduleAutoWalk(); } },
+        { label: !walkEnabled ? '✓ 关闭' : '  关闭', click: () => { walkEnabled = false; stopAutoWalk(); } },
+      ],
+    },
     { type: 'separator' },
     { label: '重置位置', click: () => resetPosition() },
     { label: '隐藏宠物', click: () => mainWindow?.hide() },
@@ -283,7 +295,8 @@ const MARGIN = 30;
 
 function scheduleAutoWalk() {
   stopAutoWalk();
-  const delay = 5000 + Math.random() * 5000; // 5-10s for testing
+  if (!walkEnabled) return;
+  const delay = 15000 + Math.random() * 25000; // 15-40s
   walkTimer = setTimeout(startAutoWalk, delay);
 }
 
