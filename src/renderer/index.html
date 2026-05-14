@@ -23,7 +23,7 @@
   /* Task bubble above pet */
   #task-bubble {
     position: absolute;
-    top: -6px;
+    top: 4px;
     left: 50%;
     transform: translateX(-50%);
     background: rgba(42, 42, 74, 0.95);
@@ -81,7 +81,7 @@
 
   /* TALKING */
   @keyframes talk-body { 0%, 100% { transform: translateY(0) scaleY(1); } 25% { transform: translateY(-1.5px) scaleY(1.03); } 75% { transform: translateY(-0.5px) scaleY(0.98); } }
-  @keyframes talk-mouth { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.8); } }
+  @keyframes talk-mouth { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
   @keyframes talk-tail { 0%, 100% { transform: rotate(0) translateY(0); } 50% { transform: rotate(-10deg) translateY(-1px); } }
   @keyframes talk-ear-l { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-6deg); } }
   @keyframes talk-ear-r { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(6deg); } }
@@ -123,7 +123,7 @@
 
   /* NIBBLE */
   @keyframes nibble-body { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-0.5px); } }
-  @keyframes nibble-mouth { 0%, 100% { transform: scaleY(1); } 30% { transform: scaleY(0.5); } 60% { transform: scaleY(1.3); } }
+  @keyframes nibble-mouth { 0%, 100% { opacity: 1; } 30% { opacity: 0.4; } 60% { opacity: 0.8; } }
   @keyframes nibble-cheek { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
   @keyframes nibble-crumb { 0% { opacity: 0; transform: translateY(0) translateX(0); } 20% { opacity: 1; transform: translateY(1px) translateX(1px); } 100% { opacity: 0; transform: translateY(6px) translateX(3px); } }
   @keyframes nibble-crumb2 { 0% { opacity: 0; transform: translateY(0) translateX(0); } 20% { opacity: 1; transform: translateY(1px) translateX(-1px); } 100% { opacity: 0; transform: translateY(5px) translateX(-2px); } }
@@ -137,10 +137,10 @@
   /* === STATE CLASSES === */
 
   .state-idle .body-group { animation: idle-body 2s ease-in-out infinite; }
-  .state-idle .ear-l { animation: idle-ear-l 4s ease-in-out infinite; transform-origin: 6px 8px; }
-  .state-idle .ear-r { animation: idle-ear-r 4.5s ease-in-out infinite; transform-origin: 26px 8px; }
+  .state-idle .ear-l { animation: idle-ear-l 4s ease-in-out infinite; transform-origin: 10px 6px; }
+  .state-idle .ear-r { animation: idle-ear-r 4.5s ease-in-out infinite; transform-origin: 22px 6px; }
   .state-idle .tail-group { animation: idle-tail 3s ease-in-out infinite; }
-  .state-idle .eye-group { animation: idle-eye 5s ease-in-out infinite; }
+  .state-idle .eye-group { animation: idle-eye 5s ease-in-out infinite; transform-origin: 16px 12px; }
   .state-idle .sparkle-eye { animation: idle-sparkle 2s ease-in-out infinite; }
   .state-idle .blush { animation: idle-blush 3s ease-in-out infinite; }
 
@@ -343,15 +343,12 @@
         <rect x="21" y="24" width="1" height="1" fill="#E8A080"/>
       </g>
 
-      <!-- COOKIE -->
-      <g transform="translate(19, 22)">
-        <rect x="0" y="1" width="4" height="3" fill="#E8D090"/>
-        <rect x="1" y="0" width="2" height="1" fill="#E8D090"/>
-        <rect x="1" y="4" width="2" height="1" fill="#D4BC78"/>
-        <rect x="1" y="1" width="2" height="1" fill="#F5E0A0"/>
-        <rect x="0" y="2" width="4" height="1" fill="#F5E0A0"/>
-        <rect x="1" y="3" width="2" height="1" fill="#F5E0A0"/>
-        <rect x="1" y="1" width="1" height="1" fill="#FFF5D0"/>
+      <!-- COOKIE (small, held above paw) -->
+      <g transform="translate(20, 20)">
+        <rect x="0" y="0" width="3" height="2" fill="#E8D090"/>
+        <rect x="1" y="0" width="1" height="1" fill="#F5E0A0"/>
+        <rect x="0" y="1" width="3" height="1" fill="#F5E0A0"/>
+        <rect x="1" y="0" width="1" height="1" fill="#FFF5D0"/>
       </g>
 
       <!-- CRUMBS -->
@@ -511,16 +508,16 @@
 
   function handleSingleClick() {
     showClickHeart();
-    // Add bounce animation via a temporary overlay class
-    container.style.transition = 'transform 0.15s ease-out';
-    container.style.transform = 'translateY(-8px)';
+    // Bounce the SVG pet directly
+    svg.style.transition = 'transform 0.15s ease-out';
+    svg.style.transform = 'translateY(-6px)';
     setTimeout(() => {
-      container.style.transition = 'transform 0.2s ease-in';
-      container.style.transform = 'translateY(0)';
+      svg.style.transition = 'transform 0.2s ease-in';
+      svg.style.transform = 'translateY(0)';
     }, 150);
     setTimeout(() => {
-      container.style.transition = '';
-      container.style.transform = '';
+      svg.style.transition = '';
+      svg.style.transform = '';
     }, 400);
   }
 
