@@ -167,13 +167,17 @@
 
   function save() {
     if (window.settingsBridge) {
-      window.settingsBridge.saveConfig({
+      const data = {
         model: modelSelect.value,
         apiKey: apiKeyInput.value.trim(),
         baseUrl: baseUrlInput.value.trim(),
-      });
+      };
+      console.log('[Settings] Saving:', JSON.stringify(data));
+      window.settingsBridge.saveConfig(data);
       status.textContent = '已保存';
       setTimeout(() => { status.textContent = ''; }, 2000);
+    } else {
+      console.error('[Settings] settingsBridge not available');
     }
   }
 

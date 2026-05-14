@@ -17,16 +17,31 @@ let currentState = 'idle';
 
 // Config
 const configPath = path.join(app.getPath('userData'), 'pet-config.json');
+console.log('[Config] Path:', configPath);
 
 function loadConfig(): Record<string, string> {
   try {
-    if (fs.existsSync(configPath)) return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-  } catch {}
+    if (fs.existsSync(configPath)) {
+      const data = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      console.log('[Config] Loaded:', configPath, JSON.stringify(data));
+      return data;
+    }
+    console.log('[Config] No file at:', configPath);
+  } catch (e) {
+    console.log('[Config] Load error:', e);
+  }
   return {};
 }
 
 function saveConfig(cfg: Record<string, string>) {
-  fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2), 'utf-8');
+  const existing = loadConfig();
+  const merged = { ...existing, ...cfg };
+  // Ensure directory exists
+  const dir = path.dirname(configPath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(configPath, JSON.stringify(merged, null, 2), 'utf-8');
+  console.log('[Config] SAVED to:', configPath);
+  console.log('[Config] Content:', JSON.stringify(merged));
 }
 
 function createWindow() {
@@ -120,8 +135,8 @@ function createSettingsWindow() {
   }
 
   settingsWindow = new BrowserWindow({
-    width: 400,
-    height: 400,
+    width: 420,
+    height: 520,
     frame: true,
     transparent: false,
     alwaysOnTop: true,
@@ -238,6 +253,7 @@ ipcMain.handle('settings:get-config', () => {
 });
 
 ipcMain.on('settings:save-config', (_, cfg: Record<string, string>) => {
+  console.log('[Settings] save-config received:', JSON.stringify(cfg));
   saveConfig(cfg);
 });
 
