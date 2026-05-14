@@ -68,7 +68,7 @@
   @keyframes idle-ear-l { 0%, 85%, 100% { transform: rotate(0); } 90% { transform: rotate(-5deg); } 95% { transform: rotate(2deg); } }
   @keyframes idle-ear-r { 0%, 88%, 100% { transform: rotate(0); } 93% { transform: rotate(5deg); } 97% { transform: rotate(-2deg); } }
   @keyframes idle-tail { 0%, 100% { transform: translateX(0) translateY(0); } 25% { transform: translateX(0.5px) translateY(-0.5px); } 75% { transform: translateX(-0.5px) translateY(0.3px); } }
-  @keyframes idle-eye { 0%, 4%, 6%, 100% { transform: scaleY(1); } 5% { transform: scaleY(0.1); } }
+  @keyframes idle-eye { 0%, 4%, 6%, 100% { opacity: 1; } 5% { opacity: 0; } }
   @keyframes idle-sparkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
   @keyframes idle-blush { 0%, 100% { opacity: 0.6; } 50% { opacity: 0.9; } }
 
@@ -76,7 +76,7 @@
   @keyframes work-body { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1px); } }
   @keyframes work-paw-l { 0%, 100% { transform: translateY(0) rotate(0); } 25% { transform: translateY(-1px) rotate(-3deg); } 50% { transform: translateY(0) rotate(0); } 75% { transform: translateY(-1px) rotate(3deg); } }
   @keyframes work-tail { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-5deg); } 75% { transform: rotate(5deg); } }
-  @keyframes work-eye { 0%, 100% { transform: scaleY(1); } 30%, 35% { transform: scaleY(0.1); } }
+  @keyframes work-eye { 0%, 100% { opacity: 1; } 30%, 35% { opacity: 0; } }
   @keyframes work-sparkle { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.5); } }
 
   /* TALKING */
@@ -96,10 +96,11 @@
   @keyframes walk-ear-r { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(3deg); } }
 
   /* ERROR */
-  @keyframes error-body { 0%, 100% { transform: translateX(0) rotate(0); } 10% { transform: translateX(-2px) rotate(-2deg); } 20% { transform: translateX(2px) rotate(2deg); } 30% { transform: translateX(-2px) rotate(-1deg); } 40% { transform: translateX(2px) rotate(1deg); } 50% { transform: translateX(-1px) rotate(-1deg); } 60% { transform: translateX(1px) rotate(0); } }
-  @keyframes error-eye { 0%, 100% { transform: scaleY(1); } 25% { transform: scaleY(0.1); } 50% { transform: scaleY(1); } 75% { transform: scaleY(0.1); } }
-  @keyframes error-ear-l { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(8deg); } }
-  @keyframes error-ear-r { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-8deg); } }
+  @keyframes error-body { 0%, 100% { transform: translateX(0) rotate(0); } 15% { transform: translateX(-3px) rotate(-1.5deg); } 30% { transform: translateX(3px) rotate(1.5deg); } 45% { transform: translateX(-2px) rotate(-1deg); } 60% { transform: translateX(2px) rotate(1deg); } 75% { transform: translateX(-1px) rotate(0); } }
+  @keyframes error-eye { 0%, 100% { opacity: 1; } 20% { opacity: 0; } 40% { opacity: 1; } 60% { opacity: 0; } 80% { opacity: 1; } }
+  @keyframes error-ear-l { 0%, 100% { transform: rotate(0) translateY(0); } 50% { transform: rotate(12deg) translateY(1px); } }
+  @keyframes error-ear-r { 0%, 100% { transform: rotate(0) translateY(0); } 50% { transform: rotate(-12deg) translateY(1px); } }
+  @keyframes error-blush { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
   @keyframes error-sparkle { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
   /* CELEBRATE */
@@ -140,7 +141,7 @@
   .state-idle .ear-l { animation: idle-ear-l 4s ease-in-out infinite; transform-origin: 10px 6px; }
   .state-idle .ear-r { animation: idle-ear-r 4.5s ease-in-out infinite; transform-origin: 22px 6px; }
   .state-idle .tail-group { animation: idle-tail 3s ease-in-out infinite; }
-  .state-idle .eye-group { animation: idle-eye 5s ease-in-out infinite; transform-origin: 16px 12px; }
+  .state-idle .eye-group { animation: idle-eye 5s ease-in-out infinite; }
   .state-idle .sparkle-eye { animation: idle-sparkle 2s ease-in-out infinite; }
   .state-idle .blush { animation: idle-blush 3s ease-in-out infinite; }
 
@@ -165,9 +166,10 @@
   .state-walk .ear-r { animation: walk-ear-r 0.5s ease-in-out infinite; transform-origin: 26px 8px; }
 
   .state-error .body-group { animation: error-body 0.6s ease-in-out infinite; }
-  .state-error .eye-group { animation: error-eye 1.5s ease-in-out infinite; }
-  .state-error .ear-l { animation: error-ear-l 0.8s ease-in-out infinite; transform-origin: 6px 8px; }
-  .state-error .ear-r { animation: error-ear-r 0.8s ease-in-out infinite; transform-origin: 26px 8px; }
+  .state-error .eye-group { animation: error-eye 1.2s ease-in-out infinite; }
+  .state-error .ear-l { animation: error-ear-l 1s ease-in-out infinite; transform-origin: 10px 6px; }
+  .state-error .ear-r { animation: error-ear-r 1s ease-in-out infinite; transform-origin: 22px 6px; }
+  .state-error .blush { animation: error-blush 0.8s ease-in-out infinite; }
   .state-error .sparkle-eye { animation: error-sparkle 0.8s ease-in-out infinite; }
 
   .state-celebrate .body-group { animation: celebrate-body 1s ease-in-out infinite; }
