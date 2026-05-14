@@ -1,0 +1,21 @@
+import { contextBridge, ipcRenderer } from 'electron';
+
+contextBridge.exposeInMainWorld('petBridge', {
+  // Position
+  move: (x: number, y: number) => ipcRenderer.send('pet:move', x, y),
+  getPosition: () => ipcRenderer.sendSync('pet:get-position'),
+  getScreenSize: () => ipcRenderer.sendSync('pet:get-screen-size'),
+
+  // Drag
+  dragStart: () => ipcRenderer.send('pet:drag-start'),
+  dragEnd: () => ipcRenderer.send('pet:drag-end'),
+  isDragging: () => ipcRenderer.invoke('pet:is-dragging'),
+
+  // State
+  onStateChange: (callback: (state: string) => void) => {
+    ipcRenderer.on('state:change', (_, state) => callback(state));
+  },
+
+  // Hook event from main
+  sendHookEvent: (state: string) => ipcRenderer.send('hook:event', state),
+});

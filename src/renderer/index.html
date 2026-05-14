@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Claude Code Pet</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: transparent;
+    -webkit-app-region: no-drag;
+    user-select: none;
+  }
+
+  #pet-container {
+    width: 180px; height: 220px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: grab;
+    -webkit-app-region: drag;
+  }
+  #pet-container:active { cursor: grabbing; }
+
+  /* === ANIMATIONS === */
+
+  /* IDLE */
+  @keyframes idle-body { 0%, 100% { transform: translateY(0) scaleY(1); } 50% { transform: translateY(-0.5px) scaleY(1.02); } }
+  @keyframes idle-ear-l { 0%, 85%, 100% { transform: rotate(0); } 90% { transform: rotate(-5deg); } 95% { transform: rotate(2deg); } }
+  @keyframes idle-ear-r { 0%, 88%, 100% { transform: rotate(0); } 93% { transform: rotate(5deg); } 97% { transform: rotate(-2deg); } }
+  @keyframes idle-tail { 0%, 100% { transform: translateX(0) translateY(0); } 25% { transform: translateX(0.5px) translateY(-0.5px); } 75% { transform: translateX(-0.5px) translateY(0.3px); } }
+  @keyframes idle-eye { 0%, 4%, 6%, 100% { transform: scaleY(1); } 5% { transform: scaleY(0.1); } }
+  @keyframes idle-sparkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  @keyframes idle-blush { 0%, 100% { opacity: 0.6; } 50% { opacity: 0.9; } }
+
+  /* WORKING */
+  @keyframes work-body { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1px); } }
+  @keyframes work-paw-l { 0%, 100% { transform: translateY(0) rotate(0); } 25% { transform: translateY(-1px) rotate(-3deg); } 50% { transform: translateY(0) rotate(0); } 75% { transform: translateY(-1px) rotate(3deg); } }
+  @keyframes work-tail { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-5deg); } 75% { transform: rotate(5deg); } }
+  @keyframes work-eye { 0%, 100% { transform: scaleY(1); } 30%, 35% { transform: scaleY(0.1); } }
+  @keyframes work-sparkle { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.5); } }
+
+  /* TALKING */
+  @keyframes talk-body { 0%, 100% { transform: translateY(0) scaleY(1); } 25% { transform: translateY(-1.5px) scaleY(1.03); } 75% { transform: translateY(-0.5px) scaleY(0.98); } }
+  @keyframes talk-mouth { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.8); } }
+  @keyframes talk-tail { 0%, 100% { transform: rotate(0) translateY(0); } 50% { transform: rotate(-10deg) translateY(-1px); } }
+  @keyframes talk-ear-l { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-6deg); } }
+  @keyframes talk-ear-r { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(6deg); } }
+  @keyframes talk-blush { 0%, 100% { opacity: 0.8; transform: scale(1); } 50% { opacity: 1; transform: scale(1.1); } }
+
+  /* WALK */
+  @keyframes walk-body { 0%, 100% { transform: translateY(0) rotate(0); } 25% { transform: translateY(-2px) rotate(-2deg); } 50% { transform: translateY(0) rotate(0); } 75% { transform: translateY(-2px) rotate(2deg); } }
+  @keyframes walk-paw-l { 0%, 100% { transform: translateY(0); } 25% { transform: translateY(-2px); } 50% { transform: translateY(0); } 75% { transform: translateY(1px); } }
+  @keyframes walk-paw-r { 0%, 100% { transform: translateY(0); } 25% { transform: translateY(1px); } 50% { transform: translateY(0); } 75% { transform: translateY(-2px); } }
+  @keyframes walk-tail { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-8deg) translateX(1px); } }
+  @keyframes walk-ear-l { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-3deg); } }
+  @keyframes walk-ear-r { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(3deg); } }
+
+  /* ERROR */
+  @keyframes error-body { 0%, 100% { transform: translateX(0) rotate(0); } 10% { transform: translateX(-2px) rotate(-2deg); } 20% { transform: translateX(2px) rotate(2deg); } 30% { transform: translateX(-2px) rotate(-1deg); } 40% { transform: translateX(2px) rotate(1deg); } 50% { transform: translateX(-1px) rotate(-1deg); } 60% { transform: translateX(1px) rotate(0); } }
+  @keyframes error-eye { 0%, 100% { transform: scaleY(1); } 25% { transform: scaleY(0.1); } 50% { transform: scaleY(1); } 75% { transform: scaleY(0.1); } }
+  @keyframes error-ear-l { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(8deg); } }
+  @keyframes error-ear-r { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-8deg); } }
+  @keyframes error-sparkle { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+  /* CELEBRATE */
+  @keyframes celebrate-body { 0%, 100% { transform: translateY(0) rotate(0); } 15% { transform: translateY(-4px) rotate(-3deg); } 30% { transform: translateY(-6px) rotate(0); } 45% { transform: translateY(-4px) rotate(3deg); } 60% { transform: translateY(0) rotate(0); } }
+  @keyframes celebrate-tail { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-15deg); } 75% { transform: rotate(15deg); } }
+  @keyframes celebrate-ear-l { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-10deg); } }
+  @keyframes celebrate-ear-r { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(10deg); } }
+  @keyframes celebrate-paw { 0%, 100% { transform: translateY(0); } 30% { transform: translateY(-3px); } 60% { transform: translateY(-1px); } }
+  @keyframes celebrate-sparkle { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(1.5); } }
+  @keyframes celebrate-stars { 0% { opacity: 0; transform: translateY(0) scale(0); } 30% { opacity: 1; transform: translateY(-3px) scale(1); } 60% { opacity: 1; transform: translateY(-6px) scale(1); } 100% { opacity: 0; transform: translateY(-10px) scale(0.5); } }
+
+  /* WINK */
+  @keyframes wink-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+  @keyframes wink-heart { 0% { opacity: 0; transform: translateY(0) scale(0); } 30% { opacity: 1; transform: translateY(-2px) scale(1); } 60% { opacity: 1; transform: translateY(-4px) scale(1); } 100% { opacity: 0; transform: translateY(-8px) scale(0.5); } }
+  @keyframes wink-tail { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(-8deg); } }
+
+  /* SLEEP */
+  @keyframes sleep-body { 0%, 100% { transform: translateY(0) scaleY(1); } 50% { transform: translateY(0.5px) scaleY(0.97); } }
+  @keyframes sleep-zz { 0% { opacity: 0; transform: translate(0, 0) scale(0.5); } 20% { opacity: 1; transform: translate(2px, -3px) scale(1); } 80% { opacity: 1; transform: translate(6px, -8px) scale(1); } 100% { opacity: 0; transform: translate(8px, -12px) scale(0.8); } }
+  @keyframes sleep-zz2 { 0% { opacity: 0; transform: translate(0, 0) scale(0.4); } 20% { opacity: 1; transform: translate(3px, -4px) scale(0.8); } 80% { opacity: 1; transform: translate(8px, -10px) scale(0.8); } 100% { opacity: 0; transform: translate(10px, -14px) scale(0.6); } }
+
+  /* NIBBLE */
+  @keyframes nibble-body { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-0.5px); } }
+  @keyframes nibble-mouth { 0%, 100% { transform: scaleY(1); } 30% { transform: scaleY(0.5); } 60% { transform: scaleY(1.3); } }
+  @keyframes nibble-cheek { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+  @keyframes nibble-crumb { 0% { opacity: 0; transform: translateY(0) translateX(0); } 20% { opacity: 1; transform: translateY(1px) translateX(1px); } 100% { opacity: 0; transform: translateY(6px) translateX(3px); } }
+  @keyframes nibble-crumb2 { 0% { opacity: 0; transform: translateY(0) translateX(0); } 20% { opacity: 1; transform: translateY(1px) translateX(-1px); } 100% { opacity: 0; transform: translateY(5px) translateX(-2px); } }
+
+  /* JUMP */
+  @keyframes jump-body { 0%, 100% { transform: translateY(0) scaleY(1); } 10% { transform: translateY(2px) scaleY(0.9); } 30% { transform: translateY(-8px) scaleY(1.05); } 50% { transform: translateY(-10px) scaleY(1); } 70% { transform: translateY(-4px) scaleY(0.98); } 90% { transform: translateY(1px) scaleY(0.95); } }
+  @keyframes jump-ear-l { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-15deg); } 50% { transform: rotate(-12deg); } 70% { transform: rotate(-5deg); } }
+  @keyframes jump-ear-r { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(15deg); } 50% { transform: rotate(12deg); } 70% { transform: rotate(5deg); } }
+  @keyframes jump-rainbow { 0% { opacity: 0; transform: scale(0.5); } 30% { opacity: 1; transform: scale(1); } 60% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.2); } }
+
+  /* === STATE CLASSES === */
+
+  .state-idle .body-group { animation: idle-body 2s ease-in-out infinite; }
+  .state-idle .ear-l { animation: idle-ear-l 4s ease-in-out infinite; transform-origin: 6px 8px; }
+  .state-idle .ear-r { animation: idle-ear-r 4.5s ease-in-out infinite; transform-origin: 26px 8px; }
+  .state-idle .tail-group { animation: idle-tail 3s ease-in-out infinite; }
+  .state-idle .eye-group { animation: idle-eye 5s ease-in-out infinite; }
+  .state-idle .sparkle-eye { animation: idle-sparkle 2s ease-in-out infinite; }
+  .state-idle .blush { animation: idle-blush 3s ease-in-out infinite; }
+
+  .state-working .body-group { animation: work-body 1.5s ease-in-out infinite; }
+  .state-working .paw-l { animation: work-paw-l 0.8s ease-in-out infinite; }
+  .state-working .tail-group { animation: work-tail 1s ease-in-out infinite; }
+  .state-working .eye-group { animation: work-eye 4s ease-in-out infinite; }
+  .state-working .sparkle-eye { animation: work-sparkle 3s ease-in-out infinite; }
+
+  .state-talking .body-group { animation: talk-body 0.8s ease-in-out infinite; }
+  .state-talking .mouth-group { animation: talk-mouth 0.4s ease-in-out infinite; }
+  .state-talking .tail-group { animation: talk-tail 0.8s ease-in-out infinite; }
+  .state-talking .ear-l { animation: talk-ear-l 1.2s ease-in-out infinite; transform-origin: 6px 8px; }
+  .state-talking .ear-r { animation: talk-ear-r 1.2s ease-in-out infinite; transform-origin: 26px 8px; }
+  .state-talking .blush { animation: talk-blush 1s ease-in-out infinite; }
+
+  .state-walk .body-group { animation: walk-body 0.5s ease-in-out infinite; }
+  .state-walk .paw-l { animation: walk-paw-l 0.5s ease-in-out infinite; }
+  .state-walk .paw-r { animation: walk-paw-r 0.5s ease-in-out infinite; }
+  .state-walk .tail-group { animation: walk-tail 0.5s ease-in-out infinite; }
+  .state-walk .ear-l { animation: walk-ear-l 0.5s ease-in-out infinite; transform-origin: 6px 8px; }
+  .state-walk .ear-r { animation: walk-ear-r 0.5s ease-in-out infinite; transform-origin: 26px 8px; }
+
+  .state-error .body-group { animation: error-body 0.6s ease-in-out infinite; }
+  .state-error .eye-group { animation: error-eye 1.5s ease-in-out infinite; }
+  .state-error .ear-l { animation: error-ear-l 0.8s ease-in-out infinite; transform-origin: 6px 8px; }
+  .state-error .ear-r { animation: error-ear-r 0.8s ease-in-out infinite; transform-origin: 26px 8px; }
+  .state-error .sparkle-eye { animation: error-sparkle 0.8s ease-in-out infinite; }
+
+  .state-celebrate .body-group { animation: celebrate-body 1s ease-in-out infinite; }
+  .state-celebrate .tail-group { animation: celebrate-tail 0.6s ease-in-out infinite; }
+  .state-celebrate .ear-l { animation: celebrate-ear-l 0.8s ease-in-out infinite; transform-origin: 6px 8px; }
+  .state-celebrate .ear-r { animation: celebrate-ear-r 0.8s ease-in-out infinite; transform-origin: 26px 8px; }
+  .state-celebrate .paw-l { animation: celebrate-paw 1s ease-in-out infinite; }
+  .state-celebrate .sparkle-eye { animation: celebrate-sparkle 0.8s ease-in-out infinite; }
+  .state-celebrate .star-particle { animation: celebrate-stars 1.2s ease-out infinite; }
+  .state-celebrate .star-particle:nth-child(2) { animation-delay: 0.3s; }
+  .state-celebrate .star-particle:nth-child(3) { animation-delay: 0.6s; }
+
+  .state-wink .pet-main { animation: wink-float 2s ease-in-out infinite; }
+  .state-wink .tail-group { animation: wink-tail 2.5s ease-in-out infinite; }
+  .state-wink .wink-heart { animation: wink-heart 2s ease-out infinite; }
+  .state-wink .eye-r-closed { display: block; }
+  .state-wink .eye-r-open { display: none; }
+
+  .state-sleep .pet-main { animation: sleep-body 3s ease-in-out infinite; }
+  .state-sleep .tail-group { animation: idle-tail 4s ease-in-out infinite; }
+  .state-sleep .sleep-zz { animation: sleep-zz 3s ease-out infinite; }
+  .state-sleep .sleep-zz2 { animation: sleep-zz2 3s ease-out 1s infinite; }
+  .state-sleep .sleep-curl { display: block; }
+  .state-sleep .body-normal { display: none; }
+
+  .state-nibble .pet-main { animation: nibble-body 1.5s ease-in-out infinite; }
+  .state-nibble .mouth-group { animation: nibble-mouth 0.6s ease-in-out infinite; }
+  .state-nibble .nibble-cheek-r { animation: nibble-cheek 0.6s ease-in-out infinite; }
+  .state-nibble .nibble-crumb { animation: nibble-crumb 1.5s ease-out infinite; }
+  .state-nibble .nibble-crumb2 { animation: nibble-crumb2 1.5s ease-out 0.3s infinite; }
+
+  .state-jump .pet-main { animation: jump-body 1.2s ease-in-out infinite; }
+  .state-jump .ear-l { animation: jump-ear-l 1.2s ease-in-out infinite; transform-origin: 6px 8px; }
+  .state-jump .ear-r { animation: jump-ear-r 1.2s ease-in-out infinite; transform-origin: 26px 8px; }
+  .state-jump .tail-group { animation: celebrate-tail 0.6s ease-in-out infinite; }
+  .state-jump .jump-rainbow { animation: jump-rainbow 1.2s ease-in-out infinite; }
+
+  /* Hidden by default */
+  .eye-r-closed { display: none; }
+  .sleep-curl { display: none; }
+  .wink-heart { opacity: 0; }
+  .nibble-cheek-r { transform-origin: 24px 13px; }
+  .jump-rainbow { opacity: 0; }
+</style>
+</head>
+<body>
+
+<div id="pet-container">
+  <svg id="petSvg" width="160" height="160" viewBox="-4 -6 40 42" shape-rendering="crispEdges">
+    <!-- RAINBOW (jump only) -->
+    <g class="jump-rainbow">
+      <rect x="8" y="30" width="2" height="1" fill="#F5A0A0"/>
+      <rect x="10" y="30" width="2" height="1" fill="#F5C6A0"/>
+      <rect x="12" y="30" width="2" height="1" fill="#F5E0A0"/>
+      <rect x="14" y="30" width="2" height="1" fill="#A0D8A0"/>
+      <rect x="16" y="30" width="2" height="1" fill="#A0C8DC"/>
+      <rect x="18" y="30" width="2" height="1" fill="#B8A0D8"/>
+      <rect x="20" y="30" width="2" height="1" fill="#F5A0B8"/>
+    </g>
+
+    <!-- TAIL CLOUD -->
+    <g class="tail-group" transform="translate(24, 20)">
+      <rect x="0" y="0" width="7" height="5" fill="#B8D8E8"/>
+      <rect x="1" y="-1" width="5" height="1" fill="#A0C8DC"/>
+      <rect x="2" y="-2" width="3" height="1" fill="#C8E8F5"/>
+      <rect x="0" y="5" width="5" height="1" fill="#A0C8DC"/>
+      <rect x="-1" y="1" width="1" height="3" fill="#A0C8DC"/>
+      <rect x="7" y="1" width="1" height="3" fill="#88B8D0"/>
+      <rect x="1" y="0" width="2" height="1" fill="#D8F0F8"/>
+    </g>
+
+    <!-- MAIN PET -->
+    <g class="pet-main">
+      <!-- BODY (normal) -->
+      <g class="body-normal">
+        <rect x="8" y="10" width="16" height="14" fill="#4A3728"/>
+        <rect x="9" y="11" width="14" height="12" fill="#F5E6D0"/>
+        <rect x="9" y="11" width="14" height="3" fill="#FFFEF5"/>
+        <rect x="9" y="21" width="14" height="2" fill="#EDD9BF"/>
+        <rect x="11" y="15" width="10" height="7" fill="#FFFEF5"/>
+        <rect x="12" y="15" width="8" height="1" fill="#FFFDF0"/>
+        <rect x="11" y="20" width="10" height="1" fill="#F5E6D0"/>
+      </g>
+
+      <!-- BODY (sleep curled) -->
+      <g class="sleep-curl">
+        <rect x="7" y="14" width="18" height="12" fill="#4A3728"/>
+        <rect x="8" y="15" width="16" height="10" fill="#F5E6D0"/>
+        <rect x="8" y="15" width="16" height="3" fill="#FFFEF5"/>
+        <rect x="8" y="23" width="16" height="2" fill="#EDD9BF"/>
+        <rect x="9" y="13" width="14" height="2" fill="#4A3728"/>
+        <rect x="10" y="12" width="12" height="2" fill="#4A3728"/>
+        <rect x="10" y="13" width="12" height="1" fill="#F5E6D0"/>
+        <rect x="11" y="19" width="8" height="5" fill="#FFFEF5"/>
+      </g>
+
+      <!-- HEAD -->
+      <rect x="7" y="5" width="18" height="13" fill="#4A3728"/>
+      <rect x="8" y="6" width="16" height="11" fill="#F5E6D0"/>
+      <rect x="8" y="6" width="16" height="3" fill="#FFFEF5"/>
+      <rect x="8" y="15" width="16" height="2" fill="#EDD9BF"/>
+      <rect x="7" y="10" width="2" height="4" fill="#F5E6D0"/>
+      <rect x="23" y="10" width="2" height="4" fill="#F5E6D0"/>
+      <rect x="8" y="14" width="1" height="2" fill="#F5E6D0"/>
+      <rect x="23" y="14" width="1" height="2" fill="#F5E6D0"/>
+
+      <!-- EARS -->
+      <g class="ear-l">
+        <rect x="7" y="2" width="6" height="6" fill="#4A3728"/>
+        <rect x="8" y="3" width="4" height="4" fill="#F5E6D0"/>
+        <rect x="9" y="3" width="2" height="3" fill="#F5C6A0"/>
+      </g>
+      <g class="ear-r">
+        <rect x="19" y="2" width="6" height="6" fill="#4A3728"/>
+        <rect x="20" y="3" width="4" height="4" fill="#F5E6D0"/>
+        <rect x="21" y="3" width="2" height="3" fill="#F5C6A0"/>
+      </g>
+
+      <!-- EYES -->
+      <g class="eye-group">
+        <rect x="10" y="10" width="4" height="4" fill="#4A3728"/>
+        <rect x="11" y="10" width="2" height="3" fill="#2A1A0E"/>
+        <rect x="11" y="10" width="2" height="2" fill="#FFFEF5"/>
+        <rect x="12" y="11" width="1" height="1" fill="#FFFFFF" class="sparkle-eye"/>
+        <g class="eye-r-open">
+          <rect x="18" y="10" width="4" height="4" fill="#4A3728"/>
+          <rect x="19" y="10" width="2" height="3" fill="#2A1A0E"/>
+          <rect x="19" y="10" width="2" height="2" fill="#FFFEF5"/>
+          <rect x="20" y="11" width="1" height="1" fill="#FFFFFF" class="sparkle-eye"/>
+        </g>
+        <g class="eye-r-closed">
+          <rect x="19" y="12" width="3" height="1" fill="#4A3728"/>
+          <rect x="20" y="11" width="1" height="1" fill="#4A3728"/>
+          <rect x="21" y="11" width="1" height="1" fill="#4A3728"/>
+        </g>
+      </g>
+
+      <!-- NOSE -->
+      <rect x="14" y="13" width="4" height="2" fill="#E8A080"/>
+      <rect x="15" y="13" width="2" height="1" fill="#F0B898"/>
+
+      <!-- MOUTH -->
+      <g class="mouth-group">
+        <rect x="14" y="15" width="4" height="1" fill="#D08060"/>
+        <rect x="13" y="15" width="1" height="1" fill="#D08060"/>
+        <rect x="18" y="15" width="1" height="1" fill="#D08060"/>
+        <rect x="15" y="16" width="2" height="1" fill="#D08060"/>
+      </g>
+
+      <!-- BLUSH -->
+      <rect x="8" y="13" width="3" height="2" fill="#F5A0A0" class="blush" opacity="0.6"/>
+      <rect x="21" y="13" width="3" height="2" fill="#F5A0A0" class="blush" opacity="0.6"/>
+
+      <!-- NIBBLE CHEEK -->
+      <g class="nibble-cheek-r">
+        <rect x="22" y="11" width="3" height="3" fill="#F5E6D0"/>
+        <rect x="23" y="12" width="2" height="2" fill="#F5E6D0"/>
+        <rect x="22" y="13" width="3" height="2" fill="#F5A0A0" opacity="0.5"/>
+      </g>
+
+      <!-- PAWS -->
+      <g class="paw-l">
+        <rect x="10" y="23" width="4" height="3" fill="#4A3728"/>
+        <rect x="11" y="23" width="2" height="2" fill="#F5C6A0"/>
+        <rect x="11" y="24" width="1" height="1" fill="#E8A080"/>
+        <rect x="13" y="24" width="1" height="1" fill="#E8A080"/>
+      </g>
+      <g class="paw-r">
+        <rect x="18" y="23" width="4" height="3" fill="#4A3728"/>
+        <rect x="19" y="23" width="2" height="2" fill="#F5C6A0"/>
+        <rect x="19" y="24" width="1" height="1" fill="#E8A080"/>
+        <rect x="21" y="24" width="1" height="1" fill="#E8A080"/>
+      </g>
+
+      <!-- COOKIE -->
+      <g transform="translate(19, 22)">
+        <rect x="0" y="1" width="4" height="3" fill="#E8D090"/>
+        <rect x="1" y="0" width="2" height="1" fill="#E8D090"/>
+        <rect x="1" y="4" width="2" height="1" fill="#D4BC78"/>
+        <rect x="1" y="1" width="2" height="1" fill="#F5E0A0"/>
+        <rect x="0" y="2" width="4" height="1" fill="#F5E0A0"/>
+        <rect x="1" y="3" width="2" height="1" fill="#F5E0A0"/>
+        <rect x="1" y="1" width="1" height="1" fill="#FFF5D0"/>
+      </g>
+
+      <!-- CRUMBS -->
+      <rect class="nibble-crumb" x="18" y="24" width="1" height="1" fill="#E8D090" opacity="0"/>
+      <rect class="nibble-crumb2" x="16" y="25" width="1" height="1" fill="#D4BC78" opacity="0"/>
+      <rect class="nibble-crumb" x="20" y="23" width="1" height="1" fill="#E8D090" opacity="0" style="animation-delay:0.5s"/>
+
+      <!-- FEET -->
+      <rect x="10" y="26" width="5" height="2" fill="#4A3728"/>
+      <rect x="11" y="26" width="3" height="1" fill="#F5C6A0"/>
+      <rect x="17" y="26" width="5" height="2" fill="#4A3728"/>
+      <rect x="18" y="26" width="3" height="1" fill="#F5C6A0"/>
+    </g>
+
+    <!-- HEART (wink) -->
+    <g class="wink-heart" transform="translate(26, 6)">
+      <rect x="0" y="0" width="1" height="1" fill="#F5A0B8"/>
+      <rect x="2" y="0" width="1" height="1" fill="#F5A0B8"/>
+      <rect x="0" y="1" width="3" height="1" fill="#F5A0B8"/>
+      <rect x="1" y="2" width="1" height="1" fill="#F5A0B8"/>
+    </g>
+
+    <!-- ZZZ (sleep) -->
+    <text class="sleep-zz" x="22" y="10" fill="#A0C8DC" font-family="monospace" font-size="4" font-weight="bold" opacity="0">Z</text>
+    <text class="sleep-zz2" x="26" y="7" fill="#88B8D0" font-family="monospace" font-size="3" font-weight="bold" opacity="0">z</text>
+
+    <!-- CELEBRATE STARS -->
+    <g class="star-particle" opacity="0">
+      <rect x="5" y="6" width="1" height="1" fill="#F5E0A0"/>
+      <rect x="4" y="7" width="3" height="1" fill="#F5E0A0"/>
+      <rect x="5" y="8" width="1" height="1" fill="#F5E0A0"/>
+    </g>
+    <g class="star-particle" opacity="0">
+      <rect x="26" y="4" width="1" height="1" fill="#F5E0A0"/>
+      <rect x="25" y="5" width="3" height="1" fill="#F5E0A0"/>
+      <rect x="26" y="6" width="1" height="1" fill="#F5E0A0"/>
+    </g>
+    <g class="star-particle" opacity="0">
+      <rect x="15" y="2" width="1" height="1" fill="#F5E0A0"/>
+      <rect x="14" y="3" width="3" height="1" fill="#F5E0A0"/>
+      <rect x="15" y="4" width="1" height="1" fill="#F5E0A0"/>
+    </g>
+  </svg>
+</div>
+
+<script>
+  const svg = document.getElementById('petSvg');
+  const container = document.getElementById('pet-container');
+
+  function setState(state) {
+    svg.className.baseVal = svg.className.baseVal.replace(/state-\w+/g, '').trim();
+    svg.classList.add('state-' + state);
+  }
+
+  // Listen for state changes from main process
+  if (window.petBridge) {
+    window.petBridge.onStateChange((state) => {
+      setState(state);
+    });
+  }
+
+  // Drag interaction
+  let isDragging = false;
+  let dragOffsetX = 0;
+  let dragOffsetY = 0;
+
+  container.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    dragOffsetX = e.screenX - (window.petBridge ? window.petBridge.getPosition().x : 0);
+    dragOffsetY = e.screenY - (window.petBridge ? window.petBridge.getPosition().y : 0);
+    window.petBridge?.dragStart();
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const x = e.screenX - dragOffsetX;
+    const y = e.screenY - dragOffsetY;
+    window.petBridge?.move(x, y);
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (isDragging) {
+      isDragging = false;
+      window.petBridge?.dragEnd();
+    }
+  });
+
+  // Default state
+  setState('idle');
+</script>
+
+</body>
+</html>
