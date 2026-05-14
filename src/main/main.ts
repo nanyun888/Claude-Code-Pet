@@ -1,10 +1,26 @@
 import { app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage } from 'electron';
 import * as path from 'path';
+import * as fs from 'fs';
 import { startHookServer, stopHookServer } from './hook-server';
 
 let mainWindow: BrowserWindow | null = null;
+let chatWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isDragging = false;
+
+// Config
+const configPath = path.join(app.getPath('userData'), 'pet-config.json');
+
+function loadConfig(): Record<string, string> {
+  try {
+    if (fs.existsSync(configPath)) return JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+  } catch {}
+  return {};
+}
+
+function saveConfig(cfg: Record<string, string>) {
+  fs.writeFileSync(configPath, JSON.stringify(cfg, null, 2), 'utf-8');
+}
 
 function createWindow() {
   const { width: screenW, height: screenH } = screen.getPrimaryDisplay().workAreaSize;
@@ -31,11 +47,44 @@ function createWindow() {
   mainWindow.setVisibleOnAllWorkspaces(true);
   mainWindow.setIgnoreMouseEvents(false);
 
-  // Prevent window from being closed
   mainWindow.on('close', (e) => {
     e.preventDefault();
     mainWindow?.hide();
   });
+}
+
+function createChatWindow() {
+  if (chatWindow && !chatWindow.isDestroyed()) {
+    chatWindow.show();
+    chatWindow.focus();
+    return;
+  }
+
+  if (!mainWindow) return;
+  const [px, py] = mainWindow.getPosition();
+
+  chatWindow = new BrowserWindow({
+    width: 280,
+    height: 240,
+    x: px - 100,
+    y: py - 250,
+    frame: false,
+    transparent: true,
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: false,
+    hasShadow: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'chat-preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  chatWindow.loadFile(path.join(__dirname, '..', '..', 'src', 'renderer', 'chat.html'));
+  chatWindow.setVisibleOnAllWorkspaces(true);
+
+  chatWindow.on('closed', () => { chatWindow = null; });
 }
 
 function createTray() {
@@ -45,7 +94,7 @@ function createTray() {
 
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Show Pet', click: () => mainWindow?.show() },
-    { label: 'Hide Pet', click: () => mainWindow?.hide() },
+    { label: 'Chat...', click: () => createChatWindow() },
     { type: 'separator' },
     { label: 'Reset Position', click: () => resetPosition() },
     { type: 'separator' },
@@ -63,7 +112,7 @@ function resetPosition() {
   mainWindow.setPosition(screenW - 250, screenH - 280);
 }
 
-// IPC handlers
+// === IPC: Pet Window ===
 ipcMain.on('pet:move', (_, x: number, y: number) => {
   mainWindow?.setPosition(Math.round(x), Math.round(y));
 });
@@ -81,15 +130,30 @@ ipcMain.on('pet:get-screen-size', (e) => {
 
 ipcMain.on('pet:drag-start', () => { isDragging = true; });
 ipcMain.on('pet:drag-end', () => { isDragging = false; });
-
 ipcMain.handle('pet:is-dragging', () => isDragging);
 
-// Hook event handler
+ipcMain.on('pet:open-chat', () => createChatWindow());
+
+// === IPC: Chat Window ===
+ipcMain.handle('chat:get-config', () => {
+  const cfg = loadConfig();
+  return { apiKey: cfg.apiKey || '' };
+});
+
+ipcMain.on('chat:save-config', (_, cfg: Record<string, string>) => {
+  saveConfig(cfg);
+});
+
+ipcMain.on('chat:close', () => {
+  chatWindow?.close();
+});
+
+// === IPC: Hook events ===
 ipcMain.on('hook:event', (_, state: string) => {
   mainWindow?.webContents.send('state:change', state);
 });
 
-// App lifecycle
+// === App lifecycle ===
 app.whenReady().then(() => {
   createWindow();
   createTray();

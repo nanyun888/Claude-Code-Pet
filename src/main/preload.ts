@@ -16,6 +16,9 @@ contextBridge.exposeInMainWorld('petBridge', {
     ipcRenderer.on('state:change', (_, state) => callback(state));
   },
 
+  // Chat
+  openChat: () => ipcRenderer.send('pet:open-chat'),
+
   // Hook event from main
   sendHookEvent: (state: string) => ipcRenderer.send('hook:event', state),
 });

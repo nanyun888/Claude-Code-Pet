@@ -442,6 +442,11 @@
     }
   });
 
+  // Double-click to open chat
+  container.addEventListener('dblclick', () => {
+    window.petBridge?.openChat();
+  });
+
   // Start
   emitCore('idle');
 </script>
