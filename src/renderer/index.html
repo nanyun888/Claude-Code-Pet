@@ -414,6 +414,28 @@
     window.petBridge.onStateChange((state) => {
       emitCore(state);
     });
+
+    // Walk animation — renderer drives window movement
+    window.petBridge.onWalkTarget((tx, ty) => {
+      const speed = 1.5;
+      function walkStep() {
+        const pos = window.petBridge.getPosition();
+        const dx = tx - pos.x;
+        const dy = ty - pos.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 3) {
+          window.petBridge.move(Math.round(tx), Math.round(ty));
+          emitCore('idle');
+          return;
+        }
+        const step = Math.min(speed, dist);
+        const nx = Math.round(pos.x + (dx / dist) * step);
+        const ny = Math.round(pos.y + (dy / dist) * step);
+        window.petBridge.move(nx, ny);
+        requestAnimationFrame(walkStep);
+      }
+      requestAnimationFrame(walkStep);
+    });
   }
 
   // === DRAG + CLICK + RIGHT-CLICK ===

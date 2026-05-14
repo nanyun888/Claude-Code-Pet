@@ -283,7 +283,7 @@ const MARGIN = 30;
 
 function scheduleAutoWalk() {
   stopAutoWalk();
-  const delay = 12000 + Math.random() * 18000; // 12-30s
+  const delay = 5000 + Math.random() * 5000; // 5-10s for testing
   walkTimer = setTimeout(startAutoWalk, delay);
 }
 
@@ -303,41 +303,17 @@ function startAutoWalk() {
   let tx = MARGIN + Math.random() * (screenW - PET_W - MARGIN * 2);
   let ty = screenH - PET_H - MARGIN + (Math.random() * 40 - 20);
 
-  // Don't walk to same spot
-  if (Math.abs(tx - cx) < 80) {
-    tx = (cx + 200 + Math.random() * 300) % (screenW - PET_W - MARGIN);
+  // Don't walk to same spot — ensure at least 150px distance
+  if (Math.abs(tx - cx) < 150) {
+    tx = cx > screenW / 2 ? MARGIN + Math.random() * 200 : screenW - PET_W - MARGIN - Math.random() * 200;
   }
 
   walkTarget = { x: tx, y: ty };
+  console.log('[Walk] Start: from', cx, cy, 'to', tx, ty, 'screen', screenW, screenH);
 
-  // Tell renderer to show walk animation
+  // Tell renderer to show walk animation and send target
   mainWindow.webContents.send('state:change', 'walk');
-
-  const speed = 1.5;
-  walkAnimFrame = setInterval(() => {
-    if (!mainWindow || !walkTarget || isDragging) {
-      stopAutoWalk();
-      mainWindow?.webContents.send('state:change', 'idle');
-      return;
-    }
-
-    const [px, py] = mainWindow.getPosition();
-    const dx = walkTarget.x - px;
-    const dy = walkTarget.y - py;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-
-    if (dist < 3) {
-      mainWindow.setPosition(Math.round(walkTarget.x), Math.round(walkTarget.y));
-      stopAutoWalk();
-      mainWindow.webContents.send('state:change', 'idle');
-      return;
-    }
-
-    const step = Math.min(speed, dist);
-    const nx = Math.round(px + (dx / dist) * step);
-    const ny = Math.round(py + (dy / dist) * step);
-    mainWindow.setBounds({ x: nx, y: ny, width: PET_W, height: PET_H });
-  }, 16);
+  mainWindow.webContents.send('walk:target', walkTarget.x, walkTarget.y);
 }
 
 // === App lifecycle ===
