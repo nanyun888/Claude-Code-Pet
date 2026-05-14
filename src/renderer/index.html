@@ -377,6 +377,8 @@
     currentState = state;
     svg.className.baseVal = svg.className.baseVal.replace(/state-\w+/g, '').trim();
     svg.classList.add('state-' + state);
+    // Notify main process for auto-walk scheduling
+    window.petBridge?.stateChanged(state);
   }
 
   function emitCore(state) {

@@ -5,8 +5,15 @@ import { startHookServer, stopHookServer } from './hook-server';
 
 let mainWindow: BrowserWindow | null = null;
 let chatWindow: BrowserWindow | null = null;
+let settingsWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isDragging = false;
+
+// Auto-walk state
+let walkTimer: ReturnType<typeof setTimeout> | null = null;
+let walkAnimFrame: ReturnType<typeof setInterval> | null = null;
+let walkTarget: { x: number; y: number } | null = null;
+let currentState = 'idle';
 
 // Config
 const configPath = path.join(app.getPath('userData'), 'pet-config.json');
@@ -105,6 +112,31 @@ function createChatWindow() {
   chatWindow.on('closed', () => { chatWindow = null; });
 }
 
+function createSettingsWindow() {
+  if (settingsWindow && !settingsWindow.isDestroyed()) {
+    settingsWindow.show();
+    settingsWindow.focus();
+    return;
+  }
+
+  settingsWindow = new BrowserWindow({
+    width: 400,
+    height: 380,
+    frame: false,
+    transparent: false,
+    alwaysOnTop: true,
+    resizable: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'settings-preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+    },
+  });
+
+  settingsWindow.loadFile(path.join(__dirname, '..', '..', 'src', 'renderer', 'settings.html'));
+  settingsWindow.on('closed', () => { settingsWindow = null; });
+}
+
 function createTray() {
   const iconPath = path.join(__dirname, '..', '..', 'assets', 'icon.ico');
   const icon = nativeImage.createFromPath(iconPath);
@@ -114,6 +146,7 @@ function createTray() {
     { label: '显示宠物', click: () => mainWindow?.show() },
     { label: '隐藏宠物', click: () => mainWindow?.hide() },
     { label: '聊天...', click: () => createChatWindow() },
+    { label: '设置...', click: () => createSettingsWindow() },
     { type: 'separator' },
     { label: '重置位置', click: () => resetPosition() },
     { type: 'separator' },
@@ -147,8 +180,11 @@ ipcMain.on('pet:get-screen-size', (e) => {
   e.returnValue = { width, height };
 });
 
-ipcMain.on('pet:drag-start', () => { isDragging = true; });
-ipcMain.on('pet:drag-end', () => { isDragging = false; });
+ipcMain.on('pet:drag-start', () => { isDragging = true; stopAutoWalk(); });
+ipcMain.on('pet:drag-end', () => {
+  isDragging = false;
+  if (currentState === 'idle') scheduleAutoWalk();
+});
 ipcMain.handle('pet:is-dragging', () => isDragging);
 
 ipcMain.on('pet:open-chat', () => createChatWindow());
@@ -157,6 +193,7 @@ ipcMain.on('pet:context-menu', () => {
   if (!mainWindow) return;
   const menu = Menu.buildFromTemplate([
     { label: '聊天', click: () => createChatWindow() },
+    { label: '设置...', click: () => createSettingsWindow() },
     { type: 'separator' },
     { label: '切换状态', enabled: false },
     { label: '  待机', click: () => mainWindow?.webContents.send('state:change', 'idle') },
@@ -186,10 +223,102 @@ ipcMain.on('chat:close', () => {
   chatWindow?.close();
 });
 
+// === IPC: Settings Window ===
+const notifyScriptPath = path.resolve(__dirname, '..', '..', 'src', 'hooks', 'notify.js').replace(/\\/g, '/');
+
+ipcMain.handle('settings:get-config', () => {
+  const cfg = loadConfig();
+  return { apiKey: cfg.apiKey || '', hookPath: notifyScriptPath };
+});
+
+ipcMain.on('settings:save-config', (_, cfg: Record<string, string>) => {
+  saveConfig(cfg);
+});
+
+ipcMain.on('settings:close', () => {
+  settingsWindow?.close();
+});
+
 // === IPC: Hook events ===
 ipcMain.on('hook:event', (_, state: string) => {
   mainWindow?.webContents.send('state:change', state);
 });
+
+// === IPC: State tracking ===
+ipcMain.on('pet:state-changed', (_, state: string) => {
+  currentState = state;
+  if (state !== 'idle') {
+    stopAutoWalk();
+  } else {
+    scheduleAutoWalk();
+  }
+});
+
+// === Auto-Walk ===
+const PET_W = 180;
+const PET_H = 220;
+const MARGIN = 30;
+
+function scheduleAutoWalk() {
+  stopAutoWalk();
+  const delay = 12000 + Math.random() * 18000; // 12-30s
+  walkTimer = setTimeout(startAutoWalk, delay);
+}
+
+function stopAutoWalk() {
+  if (walkTimer) { clearTimeout(walkTimer); walkTimer = null; }
+  if (walkAnimFrame) { clearInterval(walkAnimFrame); walkAnimFrame = null; }
+  walkTarget = null;
+}
+
+function startAutoWalk() {
+  if (!mainWindow || isDragging || currentState !== 'idle') return;
+
+  const { width: screenW, height: screenH } = screen.getPrimaryDisplay().workAreaSize;
+  const [cx, cy] = mainWindow.getPosition();
+
+  // Pick random target
+  let tx = MARGIN + Math.random() * (screenW - PET_W - MARGIN * 2);
+  let ty = screenH - PET_H - MARGIN + (Math.random() * 40 - 20);
+
+  // Don't walk to same spot
+  if (Math.abs(tx - cx) < 50 && Math.abs(ty - cy) < 20) {
+    tx = MARGIN + Math.random() * (screenW - PET_W - MARGIN * 2);
+  }
+
+  walkTarget = { x: tx, y: ty };
+
+  // Tell renderer to show walk animation
+  mainWindow.webContents.send('state:change', 'walk');
+
+  // Smooth movement
+  const speed = 1.2; // pixels per tick
+  walkAnimFrame = setInterval(() => {
+    if (!mainWindow || !walkTarget || isDragging) {
+      stopAutoWalk();
+      mainWindow?.webContents.send('state:change', 'idle');
+      return;
+    }
+
+    const [px, py] = mainWindow.getPosition();
+    const dx = walkTarget.x - px;
+    const dy = walkTarget.y - py;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist < 3) {
+      // Arrived
+      mainWindow.setPosition(Math.round(walkTarget.x), Math.round(walkTarget.y));
+      stopAutoWalk();
+      mainWindow.webContents.send('state:change', 'idle');
+      return;
+    }
+
+    const step = Math.min(speed, dist);
+    const nx = px + (dx / dist) * step;
+    const ny = py + (dy / dist) * step;
+    mainWindow.setPosition(Math.round(nx), Math.round(ny));
+  }, 16); // ~60fps
+}
 
 // === App lifecycle ===
 app.whenReady().then(() => {
@@ -198,6 +327,8 @@ app.whenReady().then(() => {
   startHookServer((state: string) => {
     mainWindow?.webContents.send('state:change', state);
   });
+  // Start auto-walk timer
+  scheduleAutoWalk();
 });
 
 app.on('window-all-closed', () => {

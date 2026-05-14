@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Settings</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #1a1a2e;
+    font-family: 'Courier New', monospace;
+    color: #e0d5c8;
+    user-select: none;
+    overflow: hidden;
+  }
+
+  .panel {
+    padding: 20px;
+    display: flex; flex-direction: column;
+    gap: 16px;
+    height: 100%;
+  }
+
+  h1 {
+    font-size: 14px; letter-spacing: 2px;
+    color: #f5e6d0;
+    border-bottom: 1px solid #3a3a5a;
+    padding-bottom: 8px;
+  }
+
+  .field {
+    display: flex; flex-direction: column;
+    gap: 4px;
+  }
+
+  .field label {
+    font-size: 10px; letter-spacing: 1px;
+    color: #a0a0c0;
+    text-transform: uppercase;
+  }
+
+  .field input {
+    background: #2a2a4a;
+    border: 1px solid #3a3a5a;
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: #f5e6d0;
+    font-family: inherit;
+    font-size: 11px;
+    outline: none;
+  }
+  .field input:focus { border-color: #f5c6a0; }
+  .field input::placeholder { color: #555; }
+
+  .hint {
+    font-size: 9px; color: #666;
+    line-height: 1.4;
+  }
+
+  .btn-row {
+    display: flex; gap: 8px;
+    margin-top: auto;
+  }
+
+  .btn {
+    flex: 1;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 11px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-primary {
+    background: #f5c6a0;
+    color: #2a2a4a;
+    font-weight: bold;
+  }
+  .btn-primary:hover { background: #f5e6d0; }
+
+  .btn-secondary {
+    background: #3a3a5a;
+    color: #a0a0c0;
+  }
+  .btn-secondary:hover { background: #4a4a6a; color: #f5e6d0; }
+
+  .status {
+    font-size: 9px;
+    color: #a0d8a0;
+    min-height: 14px;
+  }
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <h1>设置</h1>
+
+  <div class="field">
+    <label>Claude API Key</label>
+    <input id="apiKey" type="password" placeholder="sk-ant-..." />
+    <div class="hint">用于聊天功能。密钥仅保存在本地。</div>
+  </div>
+
+  <div class="field">
+    <label>Hook 通知脚本路径</label>
+    <input id="hookPath" type="text" readonly />
+    <div class="hint">将此路径配置到 Claude Code hooks 中。</div>
+  </div>
+
+  <div class="field">
+    <label>Claude Code Hooks 配置</label>
+    <div class="hint" style="line-height:1.6; background:#2a2a4a; padding:8px; border-radius:6px; border:1px solid #3a3a5a; font-size:9px;">
+      在 ~/.claude/settings.json 中添加：<br>
+      <code style="color:#f5c6a0">"hooks": {<br>
+      &nbsp;&nbsp;"PreToolUse": [{ "matcher": "*", "command": "node ' + hookPath + ' working" }],<br>
+      &nbsp;&nbsp;"Stop": [{ "command": "node ' + hookPath + ' celebrate" }]<br>
+      }</code>
+    </div>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <div class="btn-row">
+    <button class="btn btn-secondary" onclick="closeSettings()">取消</button>
+    <button class="btn btn-primary" onclick="save()">保存</button>
+  </div>
+</div>
+
+<script>
+  const apiKeyInput = document.getElementById('apiKey');
+  const hookPathInput = document.getElementById('hookPath');
+  const status = document.getElementById('status');
+
+  // Load current config
+  if (window.settingsBridge) {
+    window.settingsBridge.getConfig().then((cfg) => {
+      apiKeyInput.value = cfg.apiKey || '';
+      hookPathInput.value = cfg.hookPath || '';
+    });
+  }
+
+  function save() {
+    if (window.settingsBridge) {
+      window.settingsBridge.saveConfig({ apiKey: apiKeyInput.value.trim() });
+      status.textContent = '已保存';
+      setTimeout(() => { status.textContent = ''; }, 2000);
+    }
+  }
+
+  function closeSettings() {
+    if (window.settingsBridge) window.settingsBridge.close();
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeSettings();
+    if (e.key === 'Enter') save();
+  });
+</script>
+
+</body>
+</html>

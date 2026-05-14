@@ -22,6 +22,9 @@ contextBridge.exposeInMainWorld('petBridge', {
   // Context menu
   showContextMenu: () => ipcRenderer.send('pet:context-menu'),
 
+  // State change notification
+  stateChanged: (state: string) => ipcRenderer.send('pet:state-changed', state),
+
   // Hook event from main
   sendHookEvent: (state: string) => ipcRenderer.send('hook:event', state),
 });
