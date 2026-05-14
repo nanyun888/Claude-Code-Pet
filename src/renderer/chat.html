@@ -223,6 +223,29 @@
         extract: (data) => data.content?.[0]?.text,
       }),
     },
+    'deepseek-v4-pro': {
+      defaultUrl: 'https://api.deepseek.com',
+      modelId: 'deepseek-v4-pro',
+      buildRequest: (text, key, url) => ({
+        url: url + '/v1/chat/completions',
+        options: {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + key,
+          },
+          body: JSON.stringify({
+            model: 'deepseek-v4-pro',
+            max_tokens: 150,
+            messages: [
+              { role: 'system', content: SYSTEM_PROMPT },
+              { role: 'user', content: text },
+            ],
+          }),
+        },
+        extract: (data) => data.choices?.[0]?.message?.content,
+      }),
+    },
   };
 
   // Load config

@@ -116,6 +116,7 @@
       <option value="deepseek">DeepSeek</option>
       <option value="mimo">MiMo</option>
       <option value="mimo-v2.5-pro">MiMo-v2.5-Pro</option>
+      <option value="deepseek-v4-pro">DeepSeek-v4-Pro</option>
     </select>
   </div>
 
@@ -150,7 +151,8 @@
     claude: '<b>Claude</b> — api.anthropic.com<br>模型: claude-haiku-4-5-20251001<br>获取 Key: console.anthropic.com',
     deepseek: '<b>DeepSeek</b> — api.deepseek.com<br>模型: deepseek-chat<br>获取 Key: platform.deepseek.com',
     mimo: '<b>MiMo</b> — api.mimo.com (自定义)<br>模型: mimo-7b<br>获取 Key: 根据平台配置',
-    'mimo-v2.5-pro': '<b>MiMo-v2.5-Pro</b> — token-plan-cn.xiaomimimo.com<br>模型: mimo-v2.5-pro<br>格式: Anthropic Messages API<br>获取 Key: xiaomimimo.com',
+    'mimo-v2.5-pro': '<b>MiMo-v2.5-Pro</b> — token-plan-cn.xiaomimimo.com<br>模型: mimo-v2.5-pro (1M上下文自动开启)<br>格式: Anthropic Messages API<br>获取 Key: xiaomimimo.com',
+    'deepseek-v4-pro': '<b>DeepSeek-v4-Pro</b> — api.deepseek.com<br>模型: deepseek-v4-pro<br>格式: OpenAI Chat Completions<br>获取 Key: platform.deepseek.com<br>注意: 需要单独的 DeepSeek API Key',
   };
 
   modelSelect.addEventListener('change', () => {
