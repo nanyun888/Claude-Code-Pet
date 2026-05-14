@@ -360,19 +360,63 @@
   const svg = document.getElementById('petSvg');
   const container = document.getElementById('pet-container');
 
+  // === STATE MACHINE ===
+  const BONUS_ACTIONS = [
+    { name: 'wink',   weight: 30, duration: 3000 },
+    { name: 'nibble', weight: 30, duration: 4000 },
+    { name: 'sleep',  weight: 20, duration: 8000 },
+    { name: 'jump',   weight: 20, duration: 2000 },
+  ];
+  const PRIORITY = { error: 100, working: 80, talking: 80, celebrate: 60, walk: 50, idle: 10 };
+
+  let currentState = 'idle';
+  let coreState = 'idle';
+  let idleTimer = null;
+  let bonusTimer = null;
+
   function setState(state) {
+    if (currentState === state) return;
+    currentState = state;
     svg.className.baseVal = svg.className.baseVal.replace(/state-\w+/g, '').trim();
     svg.classList.add('state-' + state);
   }
 
-  // Listen for state changes from main process
+  function emitCore(state) {
+    clearTimeout(idleTimer);
+    clearTimeout(bonusTimer);
+    if (PRIORITY[state] !== undefined && PRIORITY[state] < PRIORITY[currentState] && PRIORITY[currentState] <= 10) return;
+    coreState = state;
+    setState(state);
+    if (state === 'idle') startIdleTimer();
+  }
+
+  function startIdleTimer() {
+    const delay = 8000 + Math.random() * 7000;
+    idleTimer = setTimeout(playRandomBonus, delay);
+  }
+
+  function playRandomBonus() {
+    const roll = Math.random() * 100;
+    let acc = 0;
+    for (const a of BONUS_ACTIONS) {
+      acc += a.weight;
+      if (roll < acc) {
+        setState(a.name);
+        bonusTimer = setTimeout(() => emitCore('idle'), a.duration);
+        return;
+      }
+    }
+    emitCore('idle');
+  }
+
+  // Listen for state changes from main process (Claude Code hooks)
   if (window.petBridge) {
     window.petBridge.onStateChange((state) => {
-      setState(state);
+      emitCore(state);
     });
   }
 
-  // Drag interaction
+  // === DRAG ===
   let isDragging = false;
   let dragOffsetX = 0;
   let dragOffsetY = 0;
@@ -398,8 +442,8 @@
     }
   });
 
-  // Default state
-  setState('idle');
+  // Start
+  emitCore('idle');
 </script>
 
 </body>

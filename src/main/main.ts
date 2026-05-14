@@ -27,7 +27,7 @@ function createWindow() {
     },
   });
 
-  mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
+  mainWindow.loadFile(path.join(__dirname, '..', '..', 'src', 'renderer', 'index.html'));
   mainWindow.setVisibleOnAllWorkspaces(true);
   mainWindow.setIgnoreMouseEvents(false);
 
@@ -39,9 +39,9 @@ function createWindow() {
 }
 
 function createTray() {
-  // Create a simple 16x16 icon
-  const icon = nativeImage.createEmpty();
-  tray = new Tray(icon);
+  const iconPath = path.join(__dirname, '..', '..', 'assets', 'icon.ico');
+  const icon = nativeImage.createFromPath(iconPath);
+  tray = new Tray(icon.isEmpty() ? nativeImage.createEmpty() : icon);
 
   const contextMenu = Menu.buildFromTemplate([
     { label: 'Show Pet', click: () => mainWindow?.show() },
@@ -54,6 +54,7 @@ function createTray() {
 
   tray.setToolTip('Claude Code Pet');
   tray.setContextMenu(contextMenu);
+  tray.on('double-click', () => mainWindow?.show());
 }
 
 function resetPosition() {

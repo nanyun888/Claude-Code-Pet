@@ -35,12 +35,24 @@ export function startHookServer(onEvent: (state: string) => void) {
     });
   });
 
-  server.listen(socketPath, () => {
-    console.log(`Hook server listening on ${socketPath}`);
+  server.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EADDRINUSE') {
+      // Pipe in use — another instance running or stale handle.
+      // On Windows, try to recreate after brief delay.
+      if (isWin) {
+        setTimeout(() => {
+          server?.close();
+          server?.listen(socketPath);
+        }, 1000);
+      }
+      console.log('Hook server: pipe already in use, retrying...');
+    } else {
+      console.error('Hook server error:', err);
+    }
   });
 
-  server.on('error', (err) => {
-    console.error('Hook server error:', err);
+  server.listen(socketPath, () => {
+    console.log(`Hook server listening on ${socketPath}`);
   });
 }
 
