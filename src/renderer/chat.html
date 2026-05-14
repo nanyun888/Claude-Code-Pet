@@ -109,12 +109,12 @@
 <div class="bubble">
   <button class="close-btn" onclick="closeBubble()">&times;</button>
   <div class="messages" id="messages">
-    <div class="msg pet">Hi! I'm your Claude Code pet~</div>
+    <div class="msg pet">你好呀~ 我是你的 Claude Code 小宠物 (=^・ω・^=)</div>
   </div>
-  <div class="typing" id="typing">typing...</div>
+  <div class="typing" id="typing">输入中...</div>
   <div class="input-row">
-    <input id="chatInput" placeholder="Say something..." maxlength="200" autocomplete="off" />
-    <button id="sendBtn" onclick="send()">SEND</button>
+    <input id="chatInput" placeholder="说点什么..." maxlength="200" autocomplete="off" />
+    <button id="sendBtn" onclick="send()">发送</button>
   </div>
 </div>
 
@@ -150,7 +150,7 @@
     sendBtn.disabled = true;
 
     if (!apiKey) {
-      addMsg('No API key configured. Set CLAUDE_API_KEY in settings.', 'pet');
+      addMsg('还没有配置 API Key 呢~ 请在设置中配置', 'pet');
       sendBtn.disabled = false;
       return;
     }
@@ -169,7 +169,7 @@
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 150,
-          system: 'You are a cute pixel fox desktop pet. Reply in 1-2 short sentences. Be playful, warm, and use occasional kaomoji like (=^・^=) or ~. Keep responses very brief.',
+          system: '你是一只可爱的像素小狐狸桌面宠物。用中文回复，1-2句简短的话。语气活泼温暖，偶尔用颜文字如 (=^・ω・^=) 或 ~。回复要非常简短。',
           messages: [{ role: 'user', content: text }],
         }),
       });
@@ -180,11 +180,11 @@
       if (data.content && data.content[0]) {
         addMsg(data.content[0].text, 'pet');
       } else if (data.error) {
-        addMsg('Error: ' + (data.error.message || 'Unknown'), 'pet');
+        addMsg('出错了: ' + (data.error.message || '未知错误'), 'pet');
       }
     } catch (e) {
       typing.classList.remove('active');
-      addMsg('Connection error...', 'pet');
+      addMsg('连接失败了...', 'pet');
     }
 
     sendBtn.disabled = false;

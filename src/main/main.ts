@@ -107,15 +107,16 @@ function createTray() {
   tray = new Tray(icon.isEmpty() ? nativeImage.createEmpty() : icon);
 
   const contextMenu = Menu.buildFromTemplate([
-    { label: 'Show Pet', click: () => mainWindow?.show() },
-    { label: 'Chat...', click: () => createChatWindow() },
+    { label: '显示宠物', click: () => mainWindow?.show() },
+    { label: '隐藏宠物', click: () => mainWindow?.hide() },
+    { label: '聊天...', click: () => createChatWindow() },
     { type: 'separator' },
-    { label: 'Reset Position', click: () => resetPosition() },
+    { label: '重置位置', click: () => resetPosition() },
     { type: 'separator' },
-    { label: 'Quit', click: () => { mainWindow?.destroy(); app.quit(); } },
+    { label: '退出', click: () => { mainWindow?.destroy(); app.quit(); } },
   ]);
 
-  tray.setToolTip('Claude Code Pet');
+  tray.setToolTip('Claude Code 桌面宠物');
   tray.setContextMenu(contextMenu);
   tray.on('double-click', () => mainWindow?.show());
 }
@@ -151,17 +152,18 @@ ipcMain.on('pet:open-chat', () => createChatWindow());
 ipcMain.on('pet:context-menu', () => {
   if (!mainWindow) return;
   const menu = Menu.buildFromTemplate([
-    { label: 'Chat with Pet', click: () => createChatWindow() },
+    { label: '聊天', click: () => createChatWindow() },
     { type: 'separator' },
-    { label: 'Pet States', enabled: false },
-    { label: '  → Idle', click: () => mainWindow?.webContents.send('state:change', 'idle') },
-    { label: '  → Working', click: () => mainWindow?.webContents.send('state:change', 'working') },
-    { label: '  → Celebrate', click: () => mainWindow?.webContents.send('state:change', 'celebrate') },
-    { label: '  → Error', click: () => mainWindow?.webContents.send('state:change', 'error') },
+    { label: '切换状态', enabled: false },
+    { label: '  待机', click: () => mainWindow?.webContents.send('state:change', 'idle') },
+    { label: '  工作中', click: () => mainWindow?.webContents.send('state:change', 'working') },
+    { label: '  说话', click: () => mainWindow?.webContents.send('state:change', 'talking') },
+    { label: '  庆祝', click: () => mainWindow?.webContents.send('state:change', 'celebrate') },
+    { label: '  错误', click: () => mainWindow?.webContents.send('state:change', 'error') },
     { type: 'separator' },
-    { label: 'Reset Position', click: () => resetPosition() },
-    { label: 'Hide Pet', click: () => mainWindow?.hide() },
-    { label: 'Quit', click: () => { mainWindow?.destroy(); app.quit(); } },
+    { label: '重置位置', click: () => resetPosition() },
+    { label: '隐藏宠物', click: () => mainWindow?.hide() },
+    { label: '退出', click: () => { mainWindow?.destroy(); app.quit(); } },
   ]);
   menu.popup({ window: mainWindow });
 });
