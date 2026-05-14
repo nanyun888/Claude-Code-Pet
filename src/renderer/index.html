@@ -509,17 +509,19 @@
     setTimeout(() => heart.remove(), 800);
   }
 
-  let singleClickTimer = null;
   function handleSingleClick() {
     showClickHeart();
-    // Play a little reaction
-    if (currentState === 'idle' || currentState === 'sleep') {
-      svg.classList.add('state-jump');
-      setTimeout(() => {
-        svg.classList.remove('state-jump');
-        svg.classList.add('state-' + currentState);
-      }, 600);
-    }
+    // Add bounce animation via a temporary overlay class
+    container.style.transition = 'transform 0.15s ease-out';
+    container.style.transform = 'translateY(-8px)';
+    setTimeout(() => {
+      container.style.transition = 'transform 0.2s ease-in';
+      container.style.transform = 'translateY(0)';
+    }, 150);
+    setTimeout(() => {
+      container.style.transition = '';
+      container.style.transform = '';
+    }, 400);
   }
 
   // Listen for state changes from main process (Claude Code hooks)
@@ -621,9 +623,13 @@
 
       // Single click → interaction feedback (delayed to check for dblclick)
       if (singleClickTimer) clearTimeout(singleClickTimer);
+      const clickStartPos = { x: e.screenX, y: e.screenY };
       singleClickTimer = setTimeout(() => {
         singleClickTimer = null;
-        handleSingleClick();
+        // Only trigger if didn't drag
+        if (!isDragging) {
+          handleSingleClick();
+        }
       }, DBLCLICK_THRESHOLD);
     }
   });
