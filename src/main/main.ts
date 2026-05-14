@@ -51,7 +51,7 @@ function createWindow() {
   mainWindow.on('move', () => {
     if (!mainWindow || !chatWindow || chatWindow.isDestroyed()) return;
     const [px, py] = mainWindow.getPosition();
-    chatWindow.setPosition(px - 50, py - 250);
+    chatWindow.setBounds({ x: px - 50, y: py - 250, width: 280, height: 240 });
   });
 
   mainWindow.on('close', (e) => {
@@ -63,7 +63,7 @@ function createWindow() {
 function positionChatToFollowPet() {
   if (!mainWindow || !chatWindow || chatWindow.isDestroyed()) return;
   const [px, py] = mainWindow.getPosition();
-  chatWindow.setPosition(px - 50, py - 250);
+  chatWindow.setBounds({ x: px - 50, y: py - 250, width: 280, height: 240 });
 }
 
 function createChatWindow() {
@@ -94,6 +94,10 @@ function createChatWindow() {
       nodeIntegration: false,
     },
   });
+
+  // Lock size to prevent layout-driven growth
+  chatWindow.setMinimumSize(280, 240);
+  chatWindow.setMaximumSize(280, 240);
 
   chatWindow.loadFile(path.join(__dirname, '..', '..', 'src', 'renderer', 'chat.html'));
   chatWindow.setVisibleOnAllWorkspaces(true);
