@@ -47,11 +47,11 @@ function createWindow() {
   mainWindow.setVisibleOnAllWorkspaces(true);
   mainWindow.setIgnoreMouseEvents(false);
 
-  // Track pet drag → reposition chat window (debounced to avoid feedback loop)
-  let moveTimer: ReturnType<typeof setTimeout> | null = null;
+  // Track pet drag → reposition chat window in real-time
   mainWindow.on('move', () => {
-    if (moveTimer) clearTimeout(moveTimer);
-    moveTimer = setTimeout(() => positionChatToFollowPet(), 50);
+    if (!mainWindow || !chatWindow || chatWindow.isDestroyed()) return;
+    const [px, py] = mainWindow.getPosition();
+    chatWindow.setPosition(px - 50, py - 250);
   });
 
   mainWindow.on('close', (e) => {
