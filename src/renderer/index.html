@@ -416,34 +416,46 @@
     });
   }
 
-  // === DRAG ===
+  // === DRAG vs CLICK ===
   let isDragging = false;
+  let mouseDownPos = null;
   let dragOffsetX = 0;
   let dragOffsetY = 0;
+  const DRAG_THRESHOLD = 5; // px before drag starts
 
   container.addEventListener('mousedown', (e) => {
-    isDragging = true;
+    mouseDownPos = { x: e.screenX, y: e.screenY };
     dragOffsetX = e.screenX - (window.petBridge ? window.petBridge.getPosition().x : 0);
     dragOffsetY = e.screenY - (window.petBridge ? window.petBridge.getPosition().y : 0);
-    window.petBridge?.dragStart();
   });
 
   document.addEventListener('mousemove', (e) => {
-    if (!isDragging) return;
-    const x = e.screenX - dragOffsetX;
-    const y = e.screenY - dragOffsetY;
-    window.petBridge?.move(x, y);
+    if (!mouseDownPos) return;
+    const dx = e.screenX - mouseDownPos.x;
+    const dy = e.screenY - mouseDownPos.y;
+    if (!isDragging && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
+      isDragging = true;
+      window.petBridge?.dragStart();
+    }
+    if (isDragging) {
+      const x = e.screenX - dragOffsetX;
+      const y = e.screenY - dragOffsetY;
+      window.petBridge?.move(x, y);
+    }
   });
 
   document.addEventListener('mouseup', () => {
+    mouseDownPos = null;
     if (isDragging) {
       isDragging = false;
       window.petBridge?.dragEnd();
     }
   });
 
-  // Double-click to open chat
-  container.addEventListener('dblclick', () => {
+  // Double-click to open chat (only fires if not dragged)
+  container.addEventListener('dblclick', (e) => {
+    if (isDragging) return;
+    e.preventDefault();
     window.petBridge?.openChat();
   });
 

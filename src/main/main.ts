@@ -47,16 +47,28 @@ function createWindow() {
   mainWindow.setVisibleOnAllWorkspaces(true);
   mainWindow.setIgnoreMouseEvents(false);
 
+  // Track pet movement → reposition chat window
+  mainWindow.on('move', () => {
+    positionChatToFollowPet();
+  });
+
   mainWindow.on('close', (e) => {
     e.preventDefault();
     mainWindow?.hide();
   });
 }
 
+function positionChatToFollowPet() {
+  if (!mainWindow || !chatWindow || chatWindow.isDestroyed()) return;
+  const [px, py] = mainWindow.getPosition();
+  chatWindow.setPosition(px - 50, py - 250);
+}
+
 function createChatWindow() {
   if (chatWindow && !chatWindow.isDestroyed()) {
     chatWindow.show();
     chatWindow.focus();
+    positionChatToFollowPet();
     return;
   }
 
@@ -66,7 +78,7 @@ function createChatWindow() {
   chatWindow = new BrowserWindow({
     width: 280,
     height: 240,
-    x: px - 100,
+    x: px - 50,
     y: py - 250,
     frame: false,
     transparent: true,
