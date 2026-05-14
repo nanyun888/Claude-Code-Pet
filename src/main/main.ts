@@ -47,9 +47,11 @@ function createWindow() {
   mainWindow.setVisibleOnAllWorkspaces(true);
   mainWindow.setIgnoreMouseEvents(false);
 
-  // Track pet movement → reposition chat window
+  // Track pet drag → reposition chat window (debounced to avoid feedback loop)
+  let moveTimer: ReturnType<typeof setTimeout> | null = null;
   mainWindow.on('move', () => {
-    positionChatToFollowPet();
+    if (moveTimer) clearTimeout(moveTimer);
+    moveTimer = setTimeout(() => positionChatToFollowPet(), 50);
   });
 
   mainWindow.on('close', (e) => {
@@ -145,6 +147,24 @@ ipcMain.on('pet:drag-end', () => { isDragging = false; });
 ipcMain.handle('pet:is-dragging', () => isDragging);
 
 ipcMain.on('pet:open-chat', () => createChatWindow());
+
+ipcMain.on('pet:context-menu', () => {
+  if (!mainWindow) return;
+  const menu = Menu.buildFromTemplate([
+    { label: 'Chat with Pet', click: () => createChatWindow() },
+    { type: 'separator' },
+    { label: 'Pet States', enabled: false },
+    { label: '  → Idle', click: () => mainWindow?.webContents.send('state:change', 'idle') },
+    { label: '  → Working', click: () => mainWindow?.webContents.send('state:change', 'working') },
+    { label: '  → Celebrate', click: () => mainWindow?.webContents.send('state:change', 'celebrate') },
+    { label: '  → Error', click: () => mainWindow?.webContents.send('state:change', 'error') },
+    { type: 'separator' },
+    { label: 'Reset Position', click: () => resetPosition() },
+    { label: 'Hide Pet', click: () => mainWindow?.hide() },
+    { label: 'Quit', click: () => { mainWindow?.destroy(); app.quit(); } },
+  ]);
+  menu.popup({ window: mainWindow });
+});
 
 // === IPC: Chat Window ===
 ipcMain.handle('chat:get-config', () => {

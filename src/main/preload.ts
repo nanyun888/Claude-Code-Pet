@@ -19,6 +19,9 @@ contextBridge.exposeInMainWorld('petBridge', {
   // Chat
   openChat: () => ipcRenderer.send('pet:open-chat'),
 
+  // Context menu
+  showContextMenu: () => ipcRenderer.send('pet:context-menu'),
+
   // Hook event from main
   sendHookEvent: (state: string) => ipcRenderer.send('hook:event', state),
 });

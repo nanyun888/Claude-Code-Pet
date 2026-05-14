@@ -416,18 +416,45 @@
     });
   }
 
-  // === DRAG vs CLICK ===
+  // === DRAG + CLICK + RIGHT-CLICK ===
   let isDragging = false;
   let mouseDownPos = null;
   let dragOffsetX = 0;
   let dragOffsetY = 0;
-  const DRAG_THRESHOLD = 5; // px before drag starts
+  const DRAG_THRESHOLD = 5;
+
+  // Manual double-click detection (reliable across platforms)
+  let lastClickTime = 0;
+  const DBLCLICK_THRESHOLD = 400; // ms
 
   container.addEventListener('mousedown', (e) => {
-    mouseDownPos = { x: e.screenX, y: e.screenY };
-    dragOffsetX = e.screenX - (window.petBridge ? window.petBridge.getPosition().x : 0);
-    dragOffsetY = e.screenY - (window.petBridge ? window.petBridge.getPosition().y : 0);
+    // Right-click → context menu
+    if (e.button === 2) {
+      e.preventDefault();
+      window.petBridge?.showContextMenu();
+      return;
+    }
+
+    // Left-click
+    if (e.button === 0) {
+      mouseDownPos = { x: e.screenX, y: e.screenY };
+      dragOffsetX = e.screenX - (window.petBridge ? window.petBridge.getPosition().x : 0);
+      dragOffsetY = e.screenY - (window.petBridge ? window.petBridge.getPosition().y : 0);
+
+      // Double-click detection
+      const now = Date.now();
+      if (now - lastClickTime < DBLCLICK_THRESHOLD) {
+        window.petBridge?.openChat();
+        lastClickTime = 0;
+        mouseDownPos = null;
+        return;
+      }
+      lastClickTime = now;
+    }
   });
+
+  // Prevent default context menu
+  container.addEventListener('contextmenu', (e) => e.preventDefault());
 
   document.addEventListener('mousemove', (e) => {
     if (!mouseDownPos) return;
@@ -435,6 +462,7 @@
     const dy = e.screenY - mouseDownPos.y;
     if (!isDragging && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
       isDragging = true;
+      mouseDownPos = null;
       window.petBridge?.dragStart();
     }
     if (isDragging) {
@@ -450,13 +478,6 @@
       isDragging = false;
       window.petBridge?.dragEnd();
     }
-  });
-
-  // Double-click to open chat (only fires if not dragged)
-  container.addEventListener('dblclick', (e) => {
-    if (isDragging) return;
-    e.preventDefault();
-    window.petBridge?.openChat();
   });
 
   // Start
