@@ -25,6 +25,11 @@ contextBridge.exposeInMainWorld('petBridge', {
   // State change notification
   stateChanged: (state: string) => ipcRenderer.send('pet:state-changed', state),
 
+  // Task update from hooks
+  onTaskUpdate: (callback: (task: any) => void) => {
+    ipcRenderer.on('task:update', (_, task) => callback(task));
+  },
+
   // Walk target handler (main → renderer)
   onWalkTarget: (callback: (x: number, y: number) => void) => {
     ipcRenderer.on('walk:target', (_, x, y) => callback(x, y));

@@ -16,8 +16,50 @@
     width: 180px; height: 220px;
     display: flex; align-items: center; justify-content: center;
     cursor: grab;
+    position: relative;
   }
   #pet-container:active { cursor: grabbing; }
+
+  /* Task bubble above pet */
+  #task-bubble {
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(42, 42, 74, 0.95);
+    border: 1px solid #f5c6a0;
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 9px;
+    color: #f5e6d0;
+    white-space: nowrap;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 10;
+  }
+  #task-bubble.visible { opacity: 1; }
+  #task-bubble .tool-name { color: #f5c6a0; font-weight: bold; }
+  #task-bubble .task-detail { color: #a0a0c0; }
+
+  /* Click interaction effect */
+  @keyframes heart-pop {
+    0% { opacity: 0; transform: translate(-50%, 0) scale(0); }
+    50% { opacity: 1; transform: translate(-50%, -10px) scale(1.2); }
+    100% { opacity: 0; transform: translate(-50%, -20px) scale(0.8); }
+  }
+  .click-heart {
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    pointer-events: none;
+    animation: heart-pop 0.8s ease-out forwards;
+  }
 
   /* === ANIMATIONS === */
 
@@ -174,6 +216,7 @@
 <body>
 
 <div id="pet-container">
+  <div id="task-bubble"><span class="tool-name"></span> <span class="task-detail"></span></div>
   <svg id="petSvg" width="160" height="160" viewBox="-4 -6 40 42" shape-rendering="crispEdges">
     <!-- RAINBOW (jump only) -->
     <g class="jump-rainbow">
@@ -409,10 +452,86 @@
     emitCore('idle');
   }
 
+  // === TASK BUBBLE ===
+  const taskBubble = document.getElementById('task-bubble');
+  const toolNameEl = taskBubble.querySelector('.tool-name');
+  const taskDetailEl = taskBubble.querySelector('.task-detail');
+  let taskBubbleTimer = null;
+
+  const TOOL_LABELS = {
+    Bash: '执行命令',
+    Read: '读取文件',
+    Write: '写入文件',
+    Edit: '编辑文件',
+    Grep: '搜索内容',
+    Glob: '查找文件',
+    Agent: '子任务',
+    WebFetch: '获取网页',
+    WebSearch: '搜索',
+    Skill: '技能',
+  };
+
+  function showTaskBubble(task) {
+    if (!task || !task.tool) return;
+    const label = TOOL_LABELS[task.tool] || task.tool;
+    toolNameEl.textContent = label;
+
+    // Build detail string
+    let detail = '';
+    if (task.command) {
+      detail = task.command.length > 30 ? task.command.slice(0, 30) + '...' : task.command;
+    } else if (task.filePath) {
+      const name = task.filePath.split(/[/\\]/).pop();
+      detail = name;
+    } else if (task.query) {
+      detail = task.query.length > 25 ? task.query.slice(0, 25) + '...' : task.query;
+    } else if (task.description) {
+      detail = task.description.length > 30 ? task.description.slice(0, 30) + '...' : task.description;
+    }
+    taskDetailEl.textContent = detail;
+
+    taskBubble.classList.add('visible');
+    if (taskBubbleTimer) clearTimeout(taskBubbleTimer);
+    taskBubbleTimer = setTimeout(() => taskBubble.classList.remove('visible'), 5000);
+  }
+
+  function hideTaskBubble() {
+    taskBubble.classList.remove('visible');
+    if (taskBubbleTimer) { clearTimeout(taskBubbleTimer); taskBubbleTimer = null; }
+  }
+
+  // === CLICK INTERACTION ===
+  function showClickHeart() {
+    const heart = document.createElement('div');
+    heart.className = 'click-heart';
+    heart.textContent = ['❤', '💛', '🧡', '💜', '✨'][Math.floor(Math.random() * 5)];
+    container.appendChild(heart);
+    setTimeout(() => heart.remove(), 800);
+  }
+
+  let singleClickTimer = null;
+  function handleSingleClick() {
+    showClickHeart();
+    // Play a little reaction
+    if (currentState === 'idle' || currentState === 'sleep') {
+      svg.classList.add('state-jump');
+      setTimeout(() => {
+        svg.classList.remove('state-jump');
+        svg.classList.add('state-' + currentState);
+      }, 600);
+    }
+  }
+
   // Listen for state changes from main process (Claude Code hooks)
   if (window.petBridge) {
     window.petBridge.onStateChange((state) => {
       emitCore(state);
+      if (state === 'idle') hideTaskBubble();
+    });
+
+    // Task updates from Claude Code hooks
+    window.petBridge.onTaskUpdate((task) => {
+      showTaskBubble(task);
     });
 
     // Walk animation — renderer drives window movement
@@ -491,12 +610,21 @@
 
       const now = Date.now();
       if (now - lastClickTime < DBLCLICK_THRESHOLD) {
+        // Double-click → open chat
+        if (singleClickTimer) { clearTimeout(singleClickTimer); singleClickTimer = null; }
         window.petBridge?.openChat();
         lastClickTime = 0;
         mouseDownPos = null;
         return;
       }
       lastClickTime = now;
+
+      // Single click → interaction feedback (delayed to check for dblclick)
+      if (singleClickTimer) clearTimeout(singleClickTimer);
+      singleClickTimer = setTimeout(() => {
+        singleClickTimer = null;
+        handleSingleClick();
+      }, DBLCLICK_THRESHOLD);
     }
   });
 

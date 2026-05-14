@@ -1,7 +1,7 @@
 import { app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
-import { startHookServer, stopHookServer } from './hook-server';
+import { startHookServer, stopHookServer, HookEvent } from './hook-server';
 
 let mainWindow: BrowserWindow | null = null;
 let chatWindow: BrowserWindow | null = null;
@@ -166,6 +166,7 @@ function createTray() {
     { label: '设置...', click: () => createSettingsWindow() },
     { type: 'separator' },
     { label: '重置位置', click: () => resetPosition() },
+    { label: '重新配置 Hooks', click: () => { saveConfig({ hooksConfigured: '' }); autoSetupHooks(); } },
     { type: 'separator' },
     { label: '退出', click: () => { mainWindow?.destroy(); app.quit(); } },
   ]);
@@ -333,12 +334,66 @@ function startAutoWalk() {
 app.whenReady().then(() => {
   createWindow();
   createTray();
-  startHookServer((state: string) => {
-    mainWindow?.webContents.send('state:change', state);
+  startHookServer((event: HookEvent) => {
+    mainWindow?.webContents.send('state:change', event.state);
+    if (event.task && event.task.tool) {
+      mainWindow?.webContents.send('task:update', event.task);
+    }
   });
-  // Start auto-walk timer
   scheduleAutoWalk();
+  autoSetupHooks();
 });
+
+// === Hook Auto-Setup ===
+function autoSetupHooks() {
+  const cfg = loadConfig();
+  if (cfg.hooksConfigured === 'true') return; // Already configured
+
+  const settingsPath = path.join(app.getPath('home'), '.claude', 'settings.json');
+  const notifyPath = path.resolve(__dirname, '..', '..', 'src', 'hooks', 'notify.js').replace(/\\/g, '/');
+
+  try {
+    let settings: Record<string, any> = {};
+    if (fs.existsSync(settingsPath)) {
+      settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
+    }
+
+    if (!settings.hooks) settings.hooks = {};
+
+    const hookEntries = {
+      PreToolUse: [{ matcher: '*', command: `node "${notifyPath}" working` }],
+      PostToolUse: [{ matcher: '*', command: `node "${notifyPath}" working` }],
+      Stop: [{ command: `node "${notifyPath}" celebrate` }],
+    };
+
+    let changed = false;
+    for (const [hookType, entries] of Object.entries(hookEntries)) {
+      if (!settings.hooks[hookType]) settings.hooks[hookType] = [];
+      const hasPetHook = entries.every((entry: any) =>
+        settings.hooks[hookType].some((e: any) => e.command && e.command.includes('claude-code-pet'))
+      );
+      if (!hasPetHook) {
+        settings.hooks[hookType] = settings.hooks[hookType].filter(
+          (e: any) => !e.command || !e.command.includes('notify.js')
+        );
+        settings.hooks[hookType].push(...entries);
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      const dir = path.dirname(settingsPath);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf-8');
+      console.log('[Hooks] Auto-configured:', settingsPath);
+    }
+
+    // Mark as configured
+    saveConfig({ hooksConfigured: 'true' });
+  } catch (e) {
+    console.log('[Hooks] Auto-setup skipped:', e);
+  }
+}
 
 app.on('window-all-closed', () => {
   stopHookServer();
