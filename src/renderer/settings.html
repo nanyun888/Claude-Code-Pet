@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Settings</title>
+<title>设置</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
@@ -17,7 +17,7 @@
   .panel {
     padding: 20px;
     display: flex; flex-direction: column;
-    gap: 16px;
+    gap: 14px;
     height: 100%;
   }
 
@@ -36,10 +36,9 @@
   .field label {
     font-size: 10px; letter-spacing: 1px;
     color: #a0a0c0;
-    text-transform: uppercase;
   }
 
-  .field input {
+  .field input, .field select {
     background: #2a2a4a;
     border: 1px solid #3a3a5a;
     border-radius: 6px;
@@ -49,8 +48,9 @@
     font-size: 11px;
     outline: none;
   }
-  .field input:focus { border-color: #f5c6a0; }
+  .field input:focus, .field select:focus { border-color: #f5c6a0; }
   .field input::placeholder { color: #555; }
+  .field select option { background: #2a2a4a; color: #f5e6d0; }
 
   .hint {
     font-size: 9px; color: #666;
@@ -92,6 +92,16 @@
     color: #a0d8a0;
     min-height: 14px;
   }
+
+  .model-info {
+    font-size: 9px; color: #888;
+    background: #222244;
+    border: 1px solid #3a3a5a;
+    border-radius: 6px;
+    padding: 8px;
+    line-height: 1.6;
+  }
+  .model-info b { color: #f5c6a0; }
 </style>
 </head>
 <body>
@@ -100,27 +110,25 @@
   <h1>设置</h1>
 
   <div class="field">
-    <label>Claude API Key</label>
-    <input id="apiKey" type="password" placeholder="sk-ant-..." />
-    <div class="hint">用于聊天功能。密钥仅保存在本地。</div>
+    <label>AI 模型</label>
+    <select id="model">
+      <option value="claude">Claude (Anthropic)</option>
+      <option value="deepseek">DeepSeek</option>
+      <option value="mimo">MiMo</option>
+    </select>
   </div>
 
   <div class="field">
-    <label>Hook 通知脚本路径</label>
-    <input id="hookPath" type="text" readonly />
-    <div class="hint">将此路径配置到 Claude Code hooks 中。</div>
+    <label>API Key</label>
+    <input id="apiKey" type="password" placeholder="输入对应模型的 API Key" />
   </div>
 
   <div class="field">
-    <label>Claude Code Hooks 配置</label>
-    <div class="hint" style="line-height:1.6; background:#2a2a4a; padding:8px; border-radius:6px; border:1px solid #3a3a5a; font-size:9px;">
-      在 ~/.claude/settings.json 中添加：<br>
-      <code style="color:#f5c6a0">"hooks": {<br>
-      &nbsp;&nbsp;"PreToolUse": [{ "matcher": "*", "command": "node ' + hookPath + ' working" }],<br>
-      &nbsp;&nbsp;"Stop": [{ "command": "node ' + hookPath + ' celebrate" }]<br>
-      }</code>
-    </div>
+    <label>API Base URL（可选，自定义端点）</label>
+    <input id="baseUrl" type="text" placeholder="留空使用默认地址" />
   </div>
+
+  <div class="model-info" id="modelInfo"></div>
 
   <div class="status" id="status"></div>
 
@@ -131,21 +139,39 @@
 </div>
 
 <script>
+  const modelSelect = document.getElementById('model');
   const apiKeyInput = document.getElementById('apiKey');
-  const hookPathInput = document.getElementById('hookPath');
+  const baseUrlInput = document.getElementById('baseUrl');
   const status = document.getElementById('status');
+  const modelInfo = document.getElementById('modelInfo');
+
+  const MODEL_INFO = {
+    claude: '<b>Claude</b> — api.anthropic.com<br>模型: claude-haiku-4-5-20251001<br>获取 Key: console.anthropic.com',
+    deepseek: '<b>DeepSeek</b> — api.deepseek.com<br>模型: deepseek-chat<br>获取 Key: platform.deepseek.com',
+    mimo: '<b>MiMo</b> — api.mimo.com (自定义)<br>模型: mimo-7b<br>获取 Key: 根据平台配置',
+  };
+
+  modelSelect.addEventListener('change', () => {
+    modelInfo.innerHTML = MODEL_INFO[modelSelect.value] || '';
+  });
 
   // Load current config
   if (window.settingsBridge) {
     window.settingsBridge.getConfig().then((cfg) => {
+      modelSelect.value = cfg.model || 'claude';
       apiKeyInput.value = cfg.apiKey || '';
-      hookPathInput.value = cfg.hookPath || '';
+      baseUrlInput.value = cfg.baseUrl || '';
+      modelInfo.innerHTML = MODEL_INFO[modelSelect.value] || '';
     });
   }
 
   function save() {
     if (window.settingsBridge) {
-      window.settingsBridge.saveConfig({ apiKey: apiKeyInput.value.trim() });
+      window.settingsBridge.saveConfig({
+        model: modelSelect.value,
+        apiKey: apiKeyInput.value.trim(),
+        baseUrl: baseUrlInput.value.trim(),
+      });
       status.textContent = '已保存';
       setTimeout(() => { status.textContent = ''; }, 2000);
     }
@@ -157,7 +183,6 @@
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeSettings();
-    if (e.key === 'Enter') save();
   });
 </script>
 

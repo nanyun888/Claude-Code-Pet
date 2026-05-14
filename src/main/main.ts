@@ -121,11 +121,12 @@ function createSettingsWindow() {
 
   settingsWindow = new BrowserWindow({
     width: 400,
-    height: 380,
-    frame: false,
+    height: 400,
+    frame: true,
     transparent: false,
     alwaysOnTop: true,
     resizable: false,
+    title: '设置',
     webPreferences: {
       preload: path.join(__dirname, 'settings-preload.js'),
       contextIsolation: true,
@@ -212,7 +213,7 @@ ipcMain.on('pet:context-menu', () => {
 // === IPC: Chat Window ===
 ipcMain.handle('chat:get-config', () => {
   const cfg = loadConfig();
-  return { apiKey: cfg.apiKey || '' };
+  return { apiKey: cfg.apiKey || '', model: cfg.model || 'claude', baseUrl: cfg.baseUrl || '' };
 });
 
 ipcMain.on('chat:save-config', (_, cfg: Record<string, string>) => {
@@ -277,13 +278,13 @@ function startAutoWalk() {
   const { width: screenW, height: screenH } = screen.getPrimaryDisplay().workAreaSize;
   const [cx, cy] = mainWindow.getPosition();
 
-  // Pick random target
+  // Pick random target near bottom of screen
   let tx = MARGIN + Math.random() * (screenW - PET_W - MARGIN * 2);
   let ty = screenH - PET_H - MARGIN + (Math.random() * 40 - 20);
 
   // Don't walk to same spot
-  if (Math.abs(tx - cx) < 50 && Math.abs(ty - cy) < 20) {
-    tx = MARGIN + Math.random() * (screenW - PET_W - MARGIN * 2);
+  if (Math.abs(tx - cx) < 80) {
+    tx = (cx + 200 + Math.random() * 300) % (screenW - PET_W - MARGIN);
   }
 
   walkTarget = { x: tx, y: ty };
@@ -291,8 +292,7 @@ function startAutoWalk() {
   // Tell renderer to show walk animation
   mainWindow.webContents.send('state:change', 'walk');
 
-  // Smooth movement
-  const speed = 1.2; // pixels per tick
+  const speed = 1.5;
   walkAnimFrame = setInterval(() => {
     if (!mainWindow || !walkTarget || isDragging) {
       stopAutoWalk();
@@ -306,7 +306,6 @@ function startAutoWalk() {
     const dist = Math.sqrt(dx * dx + dy * dy);
 
     if (dist < 3) {
-      // Arrived
       mainWindow.setPosition(Math.round(walkTarget.x), Math.round(walkTarget.y));
       stopAutoWalk();
       mainWindow.webContents.send('state:change', 'idle');
@@ -314,10 +313,10 @@ function startAutoWalk() {
     }
 
     const step = Math.min(speed, dist);
-    const nx = px + (dx / dist) * step;
-    const ny = py + (dy / dist) * step;
-    mainWindow.setPosition(Math.round(nx), Math.round(ny));
-  }, 16); // ~60fps
+    const nx = Math.round(px + (dx / dist) * step);
+    const ny = Math.round(py + (dy / dist) * step);
+    mainWindow.setBounds({ x: nx, y: ny, width: PET_W, height: PET_H });
+  }, 16);
 }
 
 // === App lifecycle ===

@@ -125,11 +125,90 @@
   const typing = document.getElementById('typing');
 
   let apiKey = '';
+  let model = 'claude';
+  let baseUrl = '';
 
-  // Get API key from main process
+  const SYSTEM_PROMPT = '你是一只可爱的像素小狐狸桌面宠物。用中文回复，1-2句简短的话。语气活泼温暖，偶尔用颜文字如 (=^・ω・^=) 或 ~。回复要非常简短。';
+
+  // Model configs
+  const MODELS = {
+    claude: {
+      defaultUrl: 'https://api.anthropic.com',
+      modelId: 'claude-haiku-4-5-20251001',
+      buildRequest: (text, key, url) => ({
+        url: url + '/v1/messages',
+        options: {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': key,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true',
+          },
+          body: JSON.stringify({
+            model: MODELS.claude.modelId,
+            max_tokens: 150,
+            system: SYSTEM_PROMPT,
+            messages: [{ role: 'user', content: text }],
+          }),
+        },
+        extract: (data) => data.content?.[0]?.text,
+      }),
+    },
+    deepseek: {
+      defaultUrl: 'https://api.deepseek.com',
+      modelId: 'deepseek-chat',
+      buildRequest: (text, key, url) => ({
+        url: url + '/v1/chat/completions',
+        options: {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + key,
+          },
+          body: JSON.stringify({
+            model: MODELS.deepseek.modelId,
+            max_tokens: 150,
+            messages: [
+              { role: 'system', content: SYSTEM_PROMPT },
+              { role: 'user', content: text },
+            ],
+          }),
+        },
+        extract: (data) => data.choices?.[0]?.message?.content,
+      }),
+    },
+    mimo: {
+      defaultUrl: 'https://api.mimo.com',
+      modelId: 'mimo-7b',
+      buildRequest: (text, key, url) => ({
+        url: url + '/v1/chat/completions',
+        options: {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + key,
+          },
+          body: JSON.stringify({
+            model: MODELS.mimo.modelId,
+            max_tokens: 150,
+            messages: [
+              { role: 'system', content: SYSTEM_PROMPT },
+              { role: 'user', content: text },
+            ],
+          }),
+        },
+        extract: (data) => data.choices?.[0]?.message?.content,
+      }),
+    },
+  };
+
+  // Load config
   if (window.chatBridge) {
     window.chatBridge.getConfig().then((cfg) => {
       apiKey = cfg.apiKey || '';
+      model = cfg.model || 'claude';
+      baseUrl = cfg.baseUrl || '';
     });
   }
 
@@ -150,7 +229,7 @@
     sendBtn.disabled = true;
 
     if (!apiKey) {
-      addMsg('还没有配置 API Key 呢~ 请在设置中配置', 'pet');
+      addMsg('还没有配置 API Key 呢~ 右键宠物 → 设置', 'pet');
       sendBtn.disabled = false;
       return;
     }
@@ -158,33 +237,25 @@
     typing.classList.add('active');
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001',
-          max_tokens: 150,
-          system: '你是一只可爱的像素小狐狸桌面宠物。用中文回复，1-2句简短的话。语气活泼温暖，偶尔用颜文字如 (=^・ω・^=) 或 ~。回复要非常简短。',
-          messages: [{ role: 'user', content: text }],
-        }),
-      });
+      const cfg = MODELS[model] || MODELS.claude;
+      const url = baseUrl || cfg.defaultUrl;
+      const req = cfg.buildRequest(text, apiKey, url);
 
+      const response = await fetch(req.url, req.options);
       const data = await response.json();
       typing.classList.remove('active');
 
-      if (data.content && data.content[0]) {
-        addMsg(data.content[0].text, 'pet');
+      const reply = req.extract(data);
+      if (reply) {
+        addMsg(reply, 'pet');
       } else if (data.error) {
-        addMsg('出错了: ' + (data.error.message || '未知错误'), 'pet');
+        addMsg('出错了: ' + (data.error.message || data.error.type || '未知错误'), 'pet');
+      } else {
+        addMsg('没有收到回复...', 'pet');
       }
     } catch (e) {
       typing.classList.remove('active');
-      addMsg('连接失败了...', 'pet');
+      addMsg('连接失败了... ' + (e.message || ''), 'pet');
     }
 
     sendBtn.disabled = false;
