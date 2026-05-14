@@ -229,7 +229,12 @@ const notifyScriptPath = path.resolve(__dirname, '..', '..', 'src', 'hooks', 'no
 
 ipcMain.handle('settings:get-config', () => {
   const cfg = loadConfig();
-  return { apiKey: cfg.apiKey || '', hookPath: notifyScriptPath };
+  return {
+    apiKey: cfg.apiKey || '',
+    model: cfg.model || 'claude',
+    baseUrl: cfg.baseUrl || '',
+    hookPath: notifyScriptPath,
+  };
 });
 
 ipcMain.on('settings:save-config', (_, cfg: Record<string, string>) => {
