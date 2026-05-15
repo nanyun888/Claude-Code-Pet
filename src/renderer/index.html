@@ -457,18 +457,23 @@
   const taskDetailEl = taskBubble.querySelector('.task-detail');
   let taskBubbleTimer = null;
 
-  const TOOL_LABELS = {
-    Bash: '执行命令',
-    Read: '读取文件',
-    Write: '写入文件',
-    Edit: '编辑文件',
-    Grep: '搜索内容',
-    Glob: '查找文件',
-    Agent: '子任务',
-    WebFetch: '获取网页',
-    WebSearch: '搜索',
-    Skill: '技能',
-  };
+  // i18n (injected by main process via IPC)
+  const TOOL_LABELS_ZH = { Bash: '执行命令', Read: '读取文件', Write: '写入文件', Edit: '编辑文件', Grep: '搜索内容', Glob: '查找文件', Agent: '子任务', WebFetch: '获取网页', WebSearch: '搜索', Skill: '技能' };
+  const TOOL_LABELS_EN = { Bash: 'Run Command', Read: 'Read File', Write: 'Write File', Edit: 'Edit File', Grep: 'Search', Glob: 'Find Files', Agent: 'Subtask', WebFetch: 'Fetch Web', WebSearch: 'Search', Skill: 'Skill' };
+  let _lang = 'zh';
+  const TOOL_LABELS = new Proxy({}, { get: (_, key) => (_lang === 'en' ? TOOL_LABELS_EN : TOOL_LABELS_ZH)[key] || key });
+
+  // Listen for language changes
+  if (window.petBridge) {
+    window.petBridge.onStateChange((state) => {
+      if (state.startsWith('lang:')) {
+        _lang = state.slice(5);
+        return;
+      }
+      emitCore(state);
+      if (state === 'idle') hideTaskBubble();
+    });
+  }
 
   function showTaskBubble(task) {
     if (!task || !task.tool) return;
@@ -525,11 +530,6 @@
 
   // Listen for state changes from main process (Claude Code hooks)
   if (window.petBridge) {
-    window.petBridge.onStateChange((state) => {
-      emitCore(state);
-      if (state === 'idle') hideTaskBubble();
-    });
-
     // Task updates from Claude Code hooks
     window.petBridge.onTaskUpdate((task) => {
       showTaskBubble(task);

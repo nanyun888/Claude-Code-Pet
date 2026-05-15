@@ -184,7 +184,7 @@
   <div class="session-bar">
     <span class="label">Session:</span>
     <select id="sessionSelect">
-      <option value="">默认 (最近对话)</option>
+      <option value="">Default (recent)</option>
     </select>
     <button class="refresh-btn" onclick="loadSessions()" title="刷新会话列表">⟳</button>
     <span class="session-status" id="sessionStatus"></span>
@@ -212,6 +212,20 @@
   const sessionSelect = document.getElementById('sessionSelect');
   const sessionStatus = document.getElementById('sessionStatus');
 
+  // i18n
+  const _strings = {
+    zh: { refresh: '刷新会话列表', default_session: '默认 (最近对话)', loading: '加载失败', selected: '已选择', sessions: '个会话', not_loaded: '聊天模块未加载，请重启应用~', no_reply: '没有收到回复...', conn_failed: '连接失败了，请检查网络和配置~', placeholder: '说点什么...', send: '发送', typing: '输入中...' },
+    en: { refresh: 'Refresh sessions', default_session: 'Default (recent)', loading: 'Failed', selected: 'Selected', sessions: 'sessions', not_loaded: 'Chat module not loaded, restart app~', no_reply: 'No reply received...', conn_failed: 'Connection failed, check network and config~', placeholder: 'Say something...', send: 'Send', typing: 'Typing...' },
+  };
+  let _lang = navigator.language.startsWith('zh') ? 'zh' : 'en';
+  function _t(k) { return (_strings[_lang] || _strings.zh)[k] || k; }
+
+  // Apply i18n to static elements
+  document.getElementById('chatInput').placeholder = _t('placeholder');
+  document.getElementById('sendBtn').textContent = _t('send');
+  document.getElementById('typing').textContent = _t('typing');
+  document.querySelector('.refresh-btn').title = _t('refresh');
+
   function addMsg(text, who) {
     const div = document.createElement('div');
     div.className = 'msg ' + who;
@@ -237,7 +251,7 @@
     if (!window.chatBridge) return;
     try {
       const sessions = await window.chatBridge.getSessions();
-      sessionSelect.innerHTML = '<option value="">默认 (最近对话)</option>';
+      sessionSelect.innerHTML = '<option value="">' + _t('default_session') + '</option>';
       for (const s of sessions) {
         const date = new Date(s.lastModified);
         const timeStr = date.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -247,14 +261,14 @@
         opt.textContent = s.project + ' (' + timeStr + ', ' + sizeKB + 'KB)';
         sessionSelect.appendChild(opt);
       }
-      sessionStatus.textContent = sessions.length + ' 个会话';
+      sessionStatus.textContent = sessions.length + ' ' + _t('sessions');
     } catch (e) {
-      sessionStatus.textContent = '加载失败';
+      sessionStatus.textContent = _t('loading');
     }
   }
 
   sessionSelect.addEventListener('change', () => {
-    sessionStatus.textContent = sessionSelect.value ? '已选择' : '';
+    sessionStatus.textContent = sessionSelect.value ? _t('selected') : '';
   });
 
   loadSessions();
@@ -273,7 +287,7 @@
 
     try {
       if (!window.chatBridge || !window.chatBridge.send) {
-        addMsg('聊天模块未加载，请重启应用~', 'pet');
+        addMsg(_t('not_loaded'), 'pet');
         typing.classList.remove('active');
         sendBtn.disabled = false;
         return;
@@ -287,12 +301,12 @@
       } else if (result.error) {
         addMsg(result.error, 'pet');
       } else {
-        addMsg('没有收到回复...', 'pet');
+        addMsg(_t('no_reply'), 'pet');
       }
     } catch (e) {
       console.error('[Chat] Error:', e);
       typing.classList.remove('active');
-      addMsg('连接失败了，请检查网络和配置~', 'pet');
+      addMsg(_t('conn_failed'), 'pet');
     }
 
     sendBtn.disabled = false;

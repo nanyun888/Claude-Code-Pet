@@ -4,6 +4,14 @@ import * as fs from 'fs';
 import { spawn } from 'child_process';
 import { startHookServer, stopHookServer, HookEvent } from './hook-server';
 
+// i18n
+const i18nPath = path.join(__dirname, '..', 'renderer', 'i18n.js');
+let i18n: { initI18n: (l?: string) => void; t: (k: string) => string; getLang: () => string; setLang: (l: string) => void } | null = null;
+try {
+  i18n = require(i18nPath);
+} catch {}
+function t(key: string): string { return i18n?.t(key) || key; }
+
 let mainWindow: BrowserWindow | null = null;
 let chatWindow: BrowserWindow | null = null;
 let settingsWindow: BrowserWindow | null = null;
@@ -142,7 +150,7 @@ function createSettingsWindow() {
     transparent: false,
     alwaysOnTop: true,
     resizable: false,
-    title: '设置',
+    title: t('settings_title'),
     webPreferences: {
       preload: path.join(__dirname, 'settings-preload.js'),
       contextIsolation: true,
@@ -160,18 +168,18 @@ function createTray() {
   tray = new Tray(icon.isEmpty() ? nativeImage.createEmpty() : icon);
 
   const contextMenu = Menu.buildFromTemplate([
-    { label: '显示宠物', click: () => mainWindow?.show() },
-    { label: '隐藏宠物', click: () => mainWindow?.hide() },
-    { label: '聊天...', click: () => createChatWindow() },
-    { label: '设置...', click: () => createSettingsWindow() },
+    { label: t('tray_show'), click: () => mainWindow?.show() },
+    { label: t('tray_hide'), click: () => mainWindow?.hide() },
+    { label: t('tray_chat'), click: () => createChatWindow() },
+    { label: t('tray_settings'), click: () => createSettingsWindow() },
     { type: 'separator' },
-    { label: '重置位置', click: () => resetPosition() },
-    { label: '重新配置 Hooks', click: () => { saveConfig({ hooksConfigured: '' }); autoSetupHooks(); } },
+    { label: t('tray_reset'), click: () => resetPosition() },
+    { label: t('tray_reconfig'), click: () => { saveConfig({ hooksConfigured: '' }); autoSetupHooks(); } },
     { type: 'separator' },
-    { label: '退出', click: () => { mainWindow?.destroy(); app.quit(); } },
+    { label: t('tray_exit'), click: () => { mainWindow?.destroy(); app.quit(); } },
   ]);
 
-  tray.setToolTip('Claude Code 桌面宠物');
+  tray.setToolTip('Claude Code Pet');
   tray.setContextMenu(contextMenu);
   tray.on('double-click', () => mainWindow?.show());
 }
@@ -210,30 +218,30 @@ ipcMain.on('pet:open-chat', () => createChatWindow());
 ipcMain.on('pet:context-menu', () => {
   if (!mainWindow) return;
   const menu = Menu.buildFromTemplate([
-    { label: '聊天', click: () => createChatWindow() },
-    { label: '设置...', click: () => createSettingsWindow() },
+    { label: t('menu_chat'), click: () => createChatWindow() },
+    { label: t('menu_settings'), click: () => createSettingsWindow() },
     { type: 'separator' },
     {
-      label: '切换状态',
+      label: t('menu_switch_state'),
       submenu: [
-        { label: '待机', click: () => mainWindow?.webContents.send('state:change', 'idle') },
-        { label: '工作中', click: () => mainWindow?.webContents.send('state:change', 'working') },
-        { label: '说话', click: () => mainWindow?.webContents.send('state:change', 'talking') },
-        { label: '庆祝', click: () => mainWindow?.webContents.send('state:change', 'celebrate') },
-        { label: '错误', click: () => mainWindow?.webContents.send('state:change', 'error') },
+        { label: t('menu_idle'), click: () => mainWindow?.webContents.send('state:change', 'idle') },
+        { label: t('menu_working'), click: () => mainWindow?.webContents.send('state:change', 'working') },
+        { label: t('menu_talking'), click: () => mainWindow?.webContents.send('state:change', 'talking') },
+        { label: t('menu_celebrate'), click: () => mainWindow?.webContents.send('state:change', 'celebrate') },
+        { label: t('menu_error'), click: () => mainWindow?.webContents.send('state:change', 'error') },
       ],
     },
     {
-      label: '漫步',
+      label: t('menu_walk'),
       submenu: [
-        { label: walkEnabled ? '✓ 开启' : '  开启', click: () => { walkEnabled = true; scheduleAutoWalk(); } },
-        { label: !walkEnabled ? '✓ 关闭' : '  关闭', click: () => { walkEnabled = false; stopAutoWalk(); } },
+        { label: (walkEnabled ? '✓ ' : '  ') + t('menu_on'), click: () => { walkEnabled = true; scheduleAutoWalk(); } },
+        { label: (!walkEnabled ? '✓ ' : '  ') + t('menu_off'), click: () => { walkEnabled = false; stopAutoWalk(); } },
       ],
     },
     { type: 'separator' },
-    { label: '重置位置', click: () => resetPosition() },
-    { label: '隐藏宠物', click: () => mainWindow?.hide() },
-    { label: '退出', click: () => { mainWindow?.destroy(); app.quit(); } },
+    { label: t('menu_reset_pos'), click: () => resetPosition() },
+    { label: t('menu_hide'), click: () => mainWindow?.hide() },
+    { label: t('menu_exit'), click: () => { mainWindow?.destroy(); app.quit(); } },
   ]);
   menu.popup({ window: mainWindow });
 });
@@ -242,7 +250,7 @@ ipcMain.on('pet:context-menu', () => {
 interface SessionInfo {
   id: string;
   project: string;
-  projectPath: string;
+  cwd: string;
   lastModified: string;
   size: number;
 }
@@ -264,21 +272,22 @@ function discoverSessions(): SessionInfo[] {
         try {
           const stat = fs.statSync(filePath);
           const sessionId = file.replace('.jsonl', '');
-          // Convert project dir name back to path: E--claude-Code-per → E:/claude-Code/per
-          const projectPath = project.replace(/^([A-Z])--/, '$1:/').replace(/-/g, '/');
-          sessions.push({
-            id: sessionId,
-            project: project,
-            projectPath: projectPath,
-            lastModified: stat.mtime.toISOString(),
-            size: stat.size,
-          });
+          // Extract cwd from session JSONL
+          let cwd = '';
+          const fd = fs.openSync(filePath, 'r');
+          const buf = Buffer.alloc(2000);
+          const bytesRead = fs.readSync(fd, buf, 0, 2000, 0);
+          fs.closeSync(fd);
+          const head = buf.slice(0, bytesRead).toString('utf-8');
+          const cwdMatch = head.match(/"cwd":"([^"]+)"/);
+          if (cwdMatch) cwd = cwdMatch[1].replace(/\\\\/g, '\\');
+
+          sessions.push({ id: sessionId, project, cwd, lastModified: stat.mtime.toISOString(), size: stat.size });
         } catch {}
       }
     }
   } catch {}
 
-  // Sort by last modified, most recent first
   sessions.sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
   return sessions;
 }
@@ -312,28 +321,9 @@ function findActiveSessionId(): string | null {
 }
 
 function getProjectDirForSession(sessionId: string): string {
-  // Try to find the real project path by scanning session JSONL for cwd info
-  const claudeDir = path.join(app.getPath('home'), '.claude', 'projects');
-  try {
-    const projects = fs.readdirSync(claudeDir);
-    for (const project of projects) {
-      const sessionFile = path.join(claudeDir, project, sessionId + '.jsonl');
-      if (fs.existsSync(sessionFile)) {
-        // Read first few lines to find project path
-        const content = fs.readFileSync(sessionFile, 'utf-8');
-        const lines = content.split('\n').slice(0, 5);
-        for (const line of lines) {
-          try {
-            const obj = JSON.parse(line);
-            if (obj.cwd && fs.existsSync(obj.cwd)) return obj.cwd;
-            if (obj.projectPath && fs.existsSync(obj.projectPath)) return obj.projectPath;
-          } catch {}
-        }
-        // Fallback: use process.cwd() (pet's own project directory)
-        return process.cwd();
-      }
-    }
-  } catch {}
+  const sessions = discoverSessions();
+  const session = sessions.find(s => s.id === sessionId);
+  if (session?.cwd && fs.existsSync(session.cwd)) return session.cwd;
   return process.cwd();
 }
 
@@ -351,39 +341,36 @@ ipcMain.on('chat:save-config', (_, cfg: Record<string, string>) => {
   saveConfig(cfg);
 });
 
-ipcMain.on('chat:close', () => {
-  chatWindow?.close();
-});
-
 // === Chat via Claude Code CLI ===
+// Each message spawns a claude process; --continue links conversation context.
 ipcMain.handle('chat:send', async (_: any, { text, sessionId }: { text: string; sessionId?: string }) => {
-  console.log('[Chat] Sending to Claude CLI, session:', sessionId || 'default', 'text:', text.slice(0, 80));
+  console.log('[Chat] Send:', text.slice(0, 80), 'session:', sessionId || 'default');
   return new Promise((resolve) => {
     try {
       const args = ['--print', '--output-format', 'text'];
-      const projectDir = process.cwd(); // pet's own project directory
+      let projectDir = process.cwd();
 
       if (sessionId) {
-        // Check if this is the currently active session (can't resume active sessions)
-        const activeSessionId = findActiveSessionId();
-        if (sessionId === activeSessionId) {
-          console.log('[Chat] Session is active, using --continue instead');
-          args.push('--continue');
-        } else {
-          args.push('--resume', sessionId);
-        }
+        projectDir = getProjectDirForSession(sessionId);
+        args.push('--resume', sessionId);
       } else {
-        args.push('--continue');
+        // No session specified — find the most recent non-active session
+        const sessions = discoverSessions();
+        const activeId = findActiveSessionId();
+        const recent = sessions.find(s => s.id !== activeId);
+        if (recent) {
+          projectDir = recent.cwd || projectDir;
+          args.push('--resume', recent.id);
+          console.log('[Chat] Auto-selected session:', recent.id);
+        } else {
+          // All sessions are active, use --continue as fallback
+          args.push('--continue');
+        }
       }
 
       console.log('[Chat] CWD:', projectDir, 'args:', args.join(' '));
 
-      const proc = spawn('claude', args, {
-        cwd: projectDir,
-        shell: true,
-        timeout: 120000,
-      });
-
+      const proc = spawn('claude', args, { cwd: projectDir, shell: true, timeout: 120000 });
       let stdout = '';
       let stderr = '';
 
@@ -391,7 +378,7 @@ ipcMain.handle('chat:send', async (_: any, { text, sessionId }: { text: string; 
       proc.stderr.on('data', (data: Buffer) => { stderr += data.toString(); });
 
       proc.on('close', (code) => {
-        console.log('[Chat] CLI exit code:', code, 'output length:', stdout.length);
+        console.log('[Chat] Exit code:', code, 'output:', stdout.length);
         if (code === 0 && stdout.trim()) {
           resolve({ reply: stdout.trim() });
         } else if (stderr.trim()) {
@@ -402,16 +389,19 @@ ipcMain.handle('chat:send', async (_: any, { text, sessionId }: { text: string; 
       });
 
       proc.on('error', (err) => {
-        console.log('[Chat] CLI error:', err.message);
-        resolve({ error: '无法启动 Claude Code CLI: ' + err.message });
+        resolve({ error: t('chat_cli_error') + err.message });
       });
 
       proc.stdin.write(text);
       proc.stdin.end();
     } catch (err: any) {
-      resolve({ error: '聊天出错: ' + err.message });
+      resolve({ error: t('chat_generic_error') + err.message });
     }
   });
+});
+
+ipcMain.on('chat:close', () => {
+  chatWindow?.close();
 });
 
 // === IPC: Settings Window ===
@@ -430,6 +420,16 @@ ipcMain.handle('settings:get-config', () => {
 ipcMain.on('settings:save-config', (_, cfg: Record<string, string>) => {
   console.log('[Settings] save-config received:', JSON.stringify(cfg));
   saveConfig(cfg);
+  // Update language if changed
+  if (cfg.lang) {
+    i18n?.setLang(cfg.lang as any);
+    console.log('[i18n] Language changed to:', cfg.lang);
+    // Notify pet window
+    mainWindow?.webContents.send('state:change', 'lang:' + cfg.lang);
+    // Recreate tray with new language
+    if (tray) { tray.destroy(); tray = null; }
+    createTray();
+  }
 });
 
 ipcMain.on('settings:close', () => {
@@ -494,6 +494,11 @@ function startAutoWalk() {
 
 // === App lifecycle ===
 app.whenReady().then(() => {
+  // Initialize i18n with saved language
+  const cfg = loadConfig();
+  i18n?.initI18n(cfg.lang);
+  console.log('[i18n] Language:', i18n?.getLang() || 'zh');
+
   createWindow();
   createTray();
   startHookServer((event: HookEvent) => {
