@@ -15,24 +15,69 @@
 
   .bubble {
     position: absolute;
-    bottom: 8px; left: 8px; right: 8px;
+    inset: 8px;
     background: #2a2a4a;
     border: 2px solid #3a3a5a;
     border-radius: 12px;
     padding: 12px;
     display: flex; flex-direction: column;
     gap: 8px;
-    max-height: 200px;
+  }
+
+  .session-bar {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 9px; color: #888;
+    flex-shrink: 0;
+    min-width: 0;
+  }
+  .session-bar .label {
+    flex-shrink: 0;
+  }
+  .session-bar select {
+    flex: 1;
+    min-width: 0;
+    background: #1a1a2e;
+    border: 1px solid #3a3a5a;
+    border-radius: 4px;
+    padding: 3px 4px;
+    color: #f5e6d0;
+    font-family: inherit;
+    font-size: 9px;
+    outline: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .session-bar select:focus { border-color: #f5c6a0; }
+  .session-bar .refresh-btn {
+    flex-shrink: 0;
+    background: none; border: none;
+    color: #888; cursor: pointer;
+    font-size: 11px; padding: 2px;
+  }
+  .session-bar .refresh-btn:hover { color: #f5c6a0; }
+  .session-status {
+    flex-shrink: 0;
+    font-size: 8px;
+    color: #a0d8a0;
+    white-space: nowrap;
+    max-width: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .messages {
-    max-height: 120px;
+    flex: 1;
+    min-height: 40px;
     overflow-y: auto;
     display: flex; flex-direction: column;
     gap: 6px;
     scrollbar-width: thin;
-    scrollbar-color: #3a3a5a transparent;
+    scrollbar-color: #4a4a6a #2a2a4a;
   }
+  .messages::-webkit-scrollbar { width: 6px; }
+  .messages::-webkit-scrollbar-track { background: #2a2a4a; border-radius: 3px; }
+  .messages::-webkit-scrollbar-thumb { background: #4a4a6a; border-radius: 3px; }
+  .messages::-webkit-scrollbar-thumb:hover { background: #5a5a7a; }
 
   .msg {
     font-size: 10px;
@@ -52,9 +97,31 @@
     color: #2a2a4a;
     align-self: flex-end;
   }
+  .msg.system {
+    background: #222244;
+    color: #a0a0c0;
+    align-self: center;
+    font-size: 9px;
+    font-style: italic;
+  }
+
+  .input-area {
+    flex-shrink: 0;
+    display: flex; flex-direction: column;
+    gap: 4px;
+  }
+
+  .typing {
+    font-size: 9px;
+    color: #888;
+    padding: 0 4px;
+    display: none;
+    flex-shrink: 0;
+  }
+  .typing.active { display: block; }
 
   .input-row {
-    display: flex; gap: 6px;
+    display: flex; gap: 6px; align-items: flex-end;
   }
 
   #chatInput {
@@ -67,7 +134,18 @@
     font-family: inherit;
     font-size: 11px;
     outline: none;
+    resize: none;
+    line-height: 16px;
+    min-height: 16px;
+    max-height: 64px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #4a4a6a #1a1a2e;
   }
+  #chatInput::-webkit-scrollbar { width: 5px; }
+  #chatInput::-webkit-scrollbar-track { background: transparent; }
+  #chatInput::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; }
+  #chatInput::-webkit-scrollbar-thumb:hover { background: #4a4a6a; }
   #chatInput:focus { border-color: #f5c6a0; }
   #chatInput::placeholder { color: #555; }
 
@@ -82,17 +160,11 @@
     font-weight: bold;
     cursor: pointer;
     letter-spacing: 1px;
+    white-space: nowrap;
+    height: 28px;
   }
   #sendBtn:hover { background: #f5e6d0; }
   #sendBtn:disabled { opacity: 0.5; cursor: default; }
-
-  .typing {
-    font-size: 9px;
-    color: #888;
-    padding: 2px 8px;
-    display: none;
-  }
-  .typing.active { display: block; }
 
   .close-btn {
     position: absolute;
@@ -108,13 +180,27 @@
 
 <div class="bubble">
   <button class="close-btn" onclick="closeBubble()">&times;</button>
+
+  <div class="session-bar">
+    <span class="label">Session:</span>
+    <select id="sessionSelect">
+      <option value="">默认 (最近对话)</option>
+    </select>
+    <button class="refresh-btn" onclick="loadSessions()" title="刷新会话列表">⟳</button>
+    <span class="session-status" id="sessionStatus"></span>
+  </div>
+
   <div class="messages" id="messages">
     <div class="msg pet">你好呀~ 我是你的 Claude Code 小宠物 (=^・ω・^=)</div>
+    <div class="msg system">选择上方的 Session 连接到正在运行的 Claude CLI</div>
   </div>
-  <div class="typing" id="typing">输入中...</div>
-  <div class="input-row">
-    <input id="chatInput" placeholder="说点什么..." maxlength="200" autocomplete="off" />
-    <button id="sendBtn" onclick="send()">发送</button>
+
+  <div class="input-area">
+    <div class="typing" id="typing">输入中...</div>
+    <div class="input-row">
+      <textarea id="chatInput" rows="1" placeholder="说点什么..." maxlength="1000"></textarea>
+      <button id="sendBtn" onclick="send()">发送</button>
+    </div>
   </div>
 </div>
 
@@ -123,139 +209,8 @@
   const input = document.getElementById('chatInput');
   const sendBtn = document.getElementById('sendBtn');
   const typing = document.getElementById('typing');
-
-  let apiKey = '';
-  let model = 'claude';
-  let baseUrl = '';
-
-  const SYSTEM_PROMPT = '你是一只可爱的像素小狐狸桌面宠物。用中文回复，1-2句简短的话。语气活泼温暖，偶尔用颜文字如 (=^・ω・^=) 或 ~。回复要非常简短。';
-
-  // Model configs
-  const MODELS = {
-    claude: {
-      defaultUrl: 'https://api.anthropic.com',
-      modelId: 'claude-haiku-4-5-20251001',
-      buildRequest: (text, key, url) => ({
-        url: url + '/v1/messages',
-        options: {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': key,
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-direct-browser-access': 'true',
-          },
-          body: JSON.stringify({
-            model: MODELS.claude.modelId,
-            max_tokens: 150,
-            system: SYSTEM_PROMPT,
-            messages: [{ role: 'user', content: text }],
-          }),
-        },
-        extract: (data) => data.content?.[0]?.text,
-      }),
-    },
-    deepseek: {
-      defaultUrl: 'https://api.deepseek.com',
-      modelId: 'deepseek-chat',
-      buildRequest: (text, key, url) => ({
-        url: url + '/v1/chat/completions',
-        options: {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + key,
-          },
-          body: JSON.stringify({
-            model: MODELS.deepseek.modelId,
-            max_tokens: 150,
-            messages: [
-              { role: 'system', content: SYSTEM_PROMPT },
-              { role: 'user', content: text },
-            ],
-          }),
-        },
-        extract: (data) => data.choices?.[0]?.message?.content,
-      }),
-    },
-    mimo: {
-      defaultUrl: 'https://api.mimo.com',
-      modelId: 'mimo-7b',
-      buildRequest: (text, key, url) => ({
-        url: url + '/v1/chat/completions',
-        options: {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + key,
-          },
-          body: JSON.stringify({
-            model: MODELS.mimo.modelId,
-            max_tokens: 150,
-            messages: [
-              { role: 'system', content: SYSTEM_PROMPT },
-              { role: 'user', content: text },
-            ],
-          }),
-        },
-        extract: (data) => data.choices?.[0]?.message?.content,
-      }),
-    },
-    'mimo-v2.5-pro': {
-      defaultUrl: 'https://token-plan-cn.xiaomimimo.com/anthropic',
-      modelId: 'mimo-v2.5-pro',
-      buildRequest: (text, key, url) => ({
-        url: url + '/v1/messages',
-        options: {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': key,
-            'anthropic-version': '2023-06-01',
-          },
-          body: JSON.stringify({
-            model: 'mimo-v2.5-pro',
-            max_tokens: 150,
-            system: SYSTEM_PROMPT,
-            messages: [{ role: 'user', content: text }],
-          }),
-        },
-        extract: (data) => data.content?.[0]?.text,
-      }),
-    },
-    'deepseek-v4-pro': {
-      defaultUrl: 'https://api.deepseek.com',
-      modelId: 'deepseek-v4-pro',
-      buildRequest: (text, key, url) => ({
-        url: url + '/v1/chat/completions',
-        options: {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + key,
-          },
-          body: JSON.stringify({
-            model: 'deepseek-v4-pro',
-            max_tokens: 150,
-            messages: [
-              { role: 'system', content: SYSTEM_PROMPT },
-              { role: 'user', content: text },
-            ],
-          }),
-        },
-        extract: (data) => data.choices?.[0]?.message?.content,
-      }),
-    },
-  };
-
-  // Load config
-  if (window.chatBridge) {
-    window.chatBridge.getConfig().then((cfg) => {
-      apiKey = cfg.apiKey || '';
-      model = cfg.model || 'claude';
-      baseUrl = cfg.baseUrl || '';
-    });
-  }
+  const sessionSelect = document.getElementById('sessionSelect');
+  const sessionStatus = document.getElementById('sessionStatus');
 
   function addMsg(text, who) {
     const div = document.createElement('div');
@@ -265,42 +220,77 @@
     messages.scrollTop = messages.scrollHeight;
   }
 
+  // === Auto-resize textarea (max 4 lines) ===
+  const LINE_H = 16;
+  const MAX_LINES = 4;
+
+  function autoResize() {
+    input.style.height = 'auto';
+    const lines = Math.min(MAX_LINES, Math.max(1, Math.ceil(input.scrollHeight / LINE_H)));
+    input.style.height = (lines * LINE_H) + 'px';
+    input.style.overflowY = (input.scrollHeight > MAX_LINES * LINE_H) ? 'auto' : 'hidden';
+  }
+  input.addEventListener('input', autoResize);
+
+  // Load sessions
+  async function loadSessions() {
+    if (!window.chatBridge) return;
+    try {
+      const sessions = await window.chatBridge.getSessions();
+      sessionSelect.innerHTML = '<option value="">默认 (最近对话)</option>';
+      for (const s of sessions) {
+        const date = new Date(s.lastModified);
+        const timeStr = date.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const sizeKB = Math.round(s.size / 1024);
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.project + ' (' + timeStr + ', ' + sizeKB + 'KB)';
+        sessionSelect.appendChild(opt);
+      }
+      sessionStatus.textContent = sessions.length + ' 个会话';
+    } catch (e) {
+      sessionStatus.textContent = '加载失败';
+    }
+  }
+
+  sessionSelect.addEventListener('change', () => {
+    sessionStatus.textContent = sessionSelect.value ? '已选择' : '';
+  });
+
+  loadSessions();
+
   async function send() {
     const text = input.value.trim();
     if (!text) return;
 
     addMsg(text, 'user');
     input.value = '';
+    autoResize();
     sendBtn.disabled = true;
-
-    if (!apiKey) {
-      addMsg('还没有配置 API Key 呢~ 右键宠物 → 设置', 'pet');
-      sendBtn.disabled = false;
-      return;
-    }
-
     typing.classList.add('active');
 
-    try {
-      const cfg = MODELS[model] || MODELS.claude;
-      const url = baseUrl || cfg.defaultUrl;
-      const req = cfg.buildRequest(text, apiKey, url);
+    const sessionId = sessionSelect.value || undefined;
 
-      const response = await fetch(req.url, req.options);
-      const data = await response.json();
+    try {
+      if (!window.chatBridge || !window.chatBridge.send) {
+        addMsg('聊天模块未加载，请重启应用~', 'pet');
+        typing.classList.remove('active');
+        sendBtn.disabled = false;
+        return;
+      }
+
+      const result = await window.chatBridge.send(text, sessionId);
       typing.classList.remove('active');
 
-      const reply = req.extract(data);
-      if (reply) {
-        addMsg(reply, 'pet');
-      } else if (data.error) {
-        console.error('[Chat] API error:', data.error);
-        addMsg('出错了，请检查 API Key 和模型配置~', 'pet');
+      if (result.reply) {
+        addMsg(result.reply, 'pet');
+      } else if (result.error) {
+        addMsg(result.error, 'pet');
       } else {
         addMsg('没有收到回复...', 'pet');
       }
     } catch (e) {
-      console.error('[Chat] Request failed:', e);
+      console.error('[Chat] Error:', e);
       typing.classList.remove('active');
       addMsg('连接失败了，请检查网络和配置~', 'pet');
     }

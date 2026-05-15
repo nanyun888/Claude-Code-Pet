@@ -12,33 +12,40 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const isWin = process.platform === 'win32';
 const homeDir = os.homedir();
 const settingsPath = path.join(homeDir, '.claude', 'settings.json');
 
 // Path to notify.js — resolve relative to this script
 const notifyScript = path.resolve(__dirname, 'notify.js').replace(/\\/g, '/');
 
-// Hook entries to add
+// Hook entries (Claude Code 2.x format with nested hooks array)
 const hookEntries = {
   PreToolUse: [
     {
       matcher: '*',
-      command: `node "${notifyScript}" working`,
+      hooks: [{ type: 'command', command: `node "${notifyScript}" working` }],
     },
   ],
   PostToolUse: [
     {
       matcher: '*',
-      command: `node "${notifyScript}" working`,
+      hooks: [{ type: 'command', command: `node "${notifyScript}" working` }],
     },
   ],
   Stop: [
     {
-      command: `node "${notifyScript}" celebrate`,
+      hooks: [{ type: 'command', command: `node "${notifyScript}" celebrate` }],
     },
   ],
 };
+
+function hasNotifyHook(arr) {
+  return arr.some((e) => {
+    if (e.command && e.command.includes('notify.js')) return true;
+    if (e.hooks && e.hooks.some((h) => h.command && h.command.includes('notify.js'))) return true;
+    return false;
+  });
+}
 
 function run() {
   console.log('Claude Code Pet — Hook Setup');
@@ -72,14 +79,10 @@ function run() {
       settings.hooks[hookType] = [];
     }
 
-    // Check if already configured (avoid duplicates)
     const existing = settings.hooks[hookType];
-    const alreadyHas = entries.every((entry) =>
-      existing.some((e) => e.command && e.command.includes('claude-code-pet'))
-    );
 
-    if (!alreadyHas) {
-      // Remove old pet hooks if any
+    if (!hasNotifyHook(existing)) {
+      // Remove old flat-format pet hooks if any
       settings.hooks[hookType] = existing.filter(
         (e) => !e.command || !e.command.includes('notify.js')
       );
@@ -88,7 +91,7 @@ function run() {
       added++;
       console.log(`  [+] ${hookType} → pet working/celebrate`);
     } else {
-      console.log`  [=] ${hookType} — already configured`);
+      console.log(`  [=] ${hookType} — already configured`);
     }
   }
 

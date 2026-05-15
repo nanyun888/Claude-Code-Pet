@@ -1,6 +1,7 @@
 import { app, BrowserWindow, Tray, Menu, ipcMain, screen, nativeImage } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
+import { spawn } from 'child_process';
 import { startHookServer, stopHookServer, HookEvent } from './hook-server';
 
 let mainWindow: BrowserWindow | null = null;
@@ -101,15 +102,15 @@ function createChatWindow() {
   const [px, py] = mainWindow.getPosition();
 
   chatWindow = new BrowserWindow({
-    width: 280,
-    height: 240,
+    width: 300,
+    height: 320,
     x: px - 50,
-    y: py - 250,
+    y: py - 330,
     frame: false,
     transparent: true,
     alwaysOnTop: true,
     skipTaskbar: true,
-    resizable: false,
+    resizable: true,
     hasShadow: false,
     webPreferences: {
       preload: path.join(__dirname, 'chat-preload.js'),
@@ -118,9 +119,8 @@ function createChatWindow() {
     },
   });
 
-  // Lock size to prevent layout-driven growth
-  chatWindow.setMinimumSize(280, 240);
-  chatWindow.setMaximumSize(280, 240);
+  chatWindow.setMinimumSize(260, 200);
+  chatWindow.setMaximumSize(600, 500);
 
   chatWindow.loadFile(path.join(__dirname, '..', '..', 'src', 'renderer', 'chat.html'));
   chatWindow.setVisibleOnAllWorkspaces(true);
@@ -238,7 +238,110 @@ ipcMain.on('pet:context-menu', () => {
   menu.popup({ window: mainWindow });
 });
 
+// === Session Discovery ===
+interface SessionInfo {
+  id: string;
+  project: string;
+  projectPath: string;
+  lastModified: string;
+  size: number;
+}
+
+function discoverSessions(): SessionInfo[] {
+  const claudeDir = path.join(app.getPath('home'), '.claude', 'projects');
+  if (!fs.existsSync(claudeDir)) return [];
+
+  const sessions: SessionInfo[] = [];
+  try {
+    const projects = fs.readdirSync(claudeDir);
+    for (const project of projects) {
+      const projectDir = path.join(claudeDir, project);
+      if (!fs.statSync(projectDir).isDirectory()) continue;
+
+      const files = fs.readdirSync(projectDir).filter(f => f.endsWith('.jsonl'));
+      for (const file of files) {
+        const filePath = path.join(projectDir, file);
+        try {
+          const stat = fs.statSync(filePath);
+          const sessionId = file.replace('.jsonl', '');
+          // Convert project dir name back to path: E--claude-Code-per → E:/claude-Code/per
+          const projectPath = project.replace(/^([A-Z])--/, '$1:/').replace(/-/g, '/');
+          sessions.push({
+            id: sessionId,
+            project: project,
+            projectPath: projectPath,
+            lastModified: stat.mtime.toISOString(),
+            size: stat.size,
+          });
+        } catch {}
+      }
+    }
+  } catch {}
+
+  // Sort by last modified, most recent first
+  sessions.sort((a, b) => new Date(b.lastModified).getTime() - new Date(a.lastModified).getTime());
+  return sessions;
+}
+
+function findActiveSessionId(): string | null {
+  const claudeDir = path.join(app.getPath('home'), '.claude', 'projects');
+  try {
+    const projects = fs.readdirSync(claudeDir);
+    let newest: { id: string; mtime: number } | null = null;
+    const now = Date.now();
+    for (const project of projects) {
+      const projectDir = path.join(claudeDir, project);
+      if (!fs.statSync(projectDir).isDirectory()) continue;
+      const files = fs.readdirSync(projectDir).filter(f => f.endsWith('.jsonl'));
+      for (const file of files) {
+        const filePath = path.join(projectDir, file);
+        try {
+          const stat = fs.statSync(filePath);
+          // Active session: modified within last 5 minutes
+          if (now - stat.mtime.getTime() < 5 * 60 * 1000) {
+            if (!newest || stat.mtime.getTime() > newest.mtime) {
+              newest = { id: file.replace('.jsonl', ''), mtime: stat.mtime.getTime() };
+            }
+          }
+        } catch {}
+      }
+    }
+    return newest?.id || null;
+  } catch {}
+  return null;
+}
+
+function getProjectDirForSession(sessionId: string): string {
+  // Try to find the real project path by scanning session JSONL for cwd info
+  const claudeDir = path.join(app.getPath('home'), '.claude', 'projects');
+  try {
+    const projects = fs.readdirSync(claudeDir);
+    for (const project of projects) {
+      const sessionFile = path.join(claudeDir, project, sessionId + '.jsonl');
+      if (fs.existsSync(sessionFile)) {
+        // Read first few lines to find project path
+        const content = fs.readFileSync(sessionFile, 'utf-8');
+        const lines = content.split('\n').slice(0, 5);
+        for (const line of lines) {
+          try {
+            const obj = JSON.parse(line);
+            if (obj.cwd && fs.existsSync(obj.cwd)) return obj.cwd;
+            if (obj.projectPath && fs.existsSync(obj.projectPath)) return obj.projectPath;
+          } catch {}
+        }
+        // Fallback: use process.cwd() (pet's own project directory)
+        return process.cwd();
+      }
+    }
+  } catch {}
+  return process.cwd();
+}
+
 // === IPC: Chat Window ===
+ipcMain.handle('chat:get-sessions', () => {
+  return discoverSessions();
+});
+
 ipcMain.handle('chat:get-config', () => {
   const cfg = loadConfig();
   return { apiKey: cfg.apiKey || '', model: cfg.model || 'claude', baseUrl: cfg.baseUrl || '' };
@@ -250,6 +353,65 @@ ipcMain.on('chat:save-config', (_, cfg: Record<string, string>) => {
 
 ipcMain.on('chat:close', () => {
   chatWindow?.close();
+});
+
+// === Chat via Claude Code CLI ===
+ipcMain.handle('chat:send', async (_: any, { text, sessionId }: { text: string; sessionId?: string }) => {
+  console.log('[Chat] Sending to Claude CLI, session:', sessionId || 'default', 'text:', text.slice(0, 80));
+  return new Promise((resolve) => {
+    try {
+      const args = ['--print', '--output-format', 'text'];
+      const projectDir = process.cwd(); // pet's own project directory
+
+      if (sessionId) {
+        // Check if this is the currently active session (can't resume active sessions)
+        const activeSessionId = findActiveSessionId();
+        if (sessionId === activeSessionId) {
+          console.log('[Chat] Session is active, using --continue instead');
+          args.push('--continue');
+        } else {
+          args.push('--resume', sessionId);
+        }
+      } else {
+        args.push('--continue');
+      }
+
+      console.log('[Chat] CWD:', projectDir, 'args:', args.join(' '));
+
+      const proc = spawn('claude', args, {
+        cwd: projectDir,
+        shell: true,
+        timeout: 120000,
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      proc.stdout.on('data', (data: Buffer) => { stdout += data.toString(); });
+      proc.stderr.on('data', (data: Buffer) => { stderr += data.toString(); });
+
+      proc.on('close', (code) => {
+        console.log('[Chat] CLI exit code:', code, 'output length:', stdout.length);
+        if (code === 0 && stdout.trim()) {
+          resolve({ reply: stdout.trim() });
+        } else if (stderr.trim()) {
+          resolve({ error: stderr.trim().slice(0, 300) });
+        } else {
+          resolve({ error: 'Claude Code 没有返回回复' });
+        }
+      });
+
+      proc.on('error', (err) => {
+        console.log('[Chat] CLI error:', err.message);
+        resolve({ error: '无法启动 Claude Code CLI: ' + err.message });
+      });
+
+      proc.stdin.write(text);
+      proc.stdin.end();
+    } catch (err: any) {
+      resolve({ error: '聊天出错: ' + err.message });
+    }
+  });
 });
 
 // === IPC: Settings Window ===
@@ -346,9 +508,6 @@ app.whenReady().then(() => {
 
 // === Hook Auto-Setup ===
 function autoSetupHooks() {
-  const cfg = loadConfig();
-  if (cfg.hooksConfigured === 'true') return; // Already configured
-
   const settingsPath = path.join(app.getPath('home'), '.claude', 'settings.json');
   const notifyPath = path.resolve(__dirname, '..', '..', 'src', 'hooks', 'notify.js').replace(/\\/g, '/');
 
@@ -360,24 +519,24 @@ function autoSetupHooks() {
 
     if (!settings.hooks) settings.hooks = {};
 
-    const hookEntries = {
-      PreToolUse: [{ matcher: '*', command: `node "${notifyPath}" working` }],
-      PostToolUse: [{ matcher: '*', command: `node "${notifyPath}" working` }],
-      Stop: [{ command: `node "${notifyPath}" celebrate` }],
+    const hookEntries: Record<string, any[]> = {
+      PreToolUse: [{ matcher: '*', hooks: [{ type: 'command', command: `node "${notifyPath}" working` }] }],
+      PostToolUse: [{ matcher: '*', hooks: [{ type: 'command', command: `node "${notifyPath}" working` }] }],
+      Stop: [{ hooks: [{ type: 'command', command: `node "${notifyPath}" celebrate` }] }],
     };
 
     let changed = false;
     for (const [hookType, entries] of Object.entries(hookEntries)) {
       if (!settings.hooks[hookType]) settings.hooks[hookType] = [];
-      const hasPetHook = entries.every((entry: any) =>
-        settings.hooks[hookType].some((e: any) => e.command && e.command.includes('claude-code-pet'))
-      );
+      const hasPetHook = settings.hooks[hookType].some((e: any) => {
+        if (e.command && e.command.includes('notify.js')) return true;
+        if (e.hooks && e.hooks.some((h: any) => h.command && h.command.includes('notify.js'))) return true;
+        return false;
+      });
       if (!hasPetHook) {
-        settings.hooks[hookType] = settings.hooks[hookType].filter(
-          (e: any) => !e.command || !e.command.includes('notify.js')
-        );
         settings.hooks[hookType].push(...entries);
         changed = true;
+        console.log(`[Hooks] Added ${hookType}`);
       }
     }
 
@@ -386,12 +545,11 @@ function autoSetupHooks() {
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
       fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), 'utf-8');
       console.log('[Hooks] Auto-configured:', settingsPath);
+    } else {
+      console.log('[Hooks] Already configured');
     }
-
-    // Mark as configured
-    saveConfig({ hooksConfigured: 'true' });
   } catch (e) {
-    console.log('[Hooks] Auto-setup skipped:', e);
+    console.log('[Hooks] Auto-setup error:', e);
   }
 }
 
