@@ -6,4 +6,7 @@ contextBridge.exposeInMainWorld('chatBridge', {
   close: () => ipcRenderer.send('chat:close'),
   getSessions: () => ipcRenderer.invoke('chat:get-sessions'),
   send: (text: string, sessionId?: string) => ipcRenderer.invoke('chat:send', { text, sessionId }),
+  onStream: (callback: (text: string) => void) => {
+    ipcRenderer.on('chat:stream', (_, text) => callback(text));
+  },
 });

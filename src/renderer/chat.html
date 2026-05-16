@@ -119,6 +119,8 @@
     flex-shrink: 0;
   }
   .typing.active { display: block; }
+  @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+  .typing.active { animation: pulse 1.5s ease-in-out infinite; }
 
   .input-row {
     display: flex; gap: 6px; align-items: flex-end;
@@ -273,6 +275,55 @@
 
   loadSessions();
 
+  // Streaming support
+  let streamEl = null;
+  let streamText = '';
+  let loadingEl = null;
+  let loadingTimer = null;
+
+  function showLoading() {
+    if (loadingEl) return;
+    loadingEl = document.createElement('div');
+    loadingEl.className = 'msg pet';
+    loadingEl.style.opacity = '0.6';
+    loadingEl.style.fontStyle = 'italic';
+    loadingEl.textContent = '正在连接 Claude Code...';
+    messages.appendChild(loadingEl);
+    messages.scrollTop = messages.scrollHeight;
+
+    let elapsed = 0;
+    loadingTimer = setInterval(() => {
+      elapsed += 1;
+      if (elapsed < 3) {
+        loadingEl.textContent = '正在连接 Claude Code...';
+      } else if (elapsed < 8) {
+        loadingEl.textContent = '正在加载上下文 (' + elapsed + 's)...';
+      } else {
+        loadingEl.textContent = '正在生成回复 (' + elapsed + 's)...';
+      }
+      messages.scrollTop = messages.scrollHeight;
+    }, 1000);
+  }
+
+  function hideLoading() {
+    if (loadingTimer) { clearInterval(loadingTimer); loadingTimer = null; }
+    if (loadingEl) { loadingEl.remove(); loadingEl = null; }
+  }
+
+  if (window.chatBridge && window.chatBridge.onStream) {
+    window.chatBridge.onStream((text) => {
+      hideLoading();
+      if (!streamEl) {
+        streamEl = document.createElement('div');
+        streamEl.className = 'msg pet';
+        messages.appendChild(streamEl);
+      }
+      streamText = text;
+      streamEl.textContent = streamText;
+      messages.scrollTop = messages.scrollHeight;
+    });
+  }
+
   async function send() {
     const text = input.value.trim();
     if (!text) return;
@@ -281,34 +332,39 @@
     input.value = '';
     autoResize();
     sendBtn.disabled = true;
-    typing.classList.add('active');
+    showLoading();
+
+    streamEl = null;
+    streamText = '';
 
     const sessionId = sessionSelect.value || undefined;
 
     try {
       if (!window.chatBridge || !window.chatBridge.send) {
+        hideLoading();
         addMsg(_t('not_loaded'), 'pet');
-        typing.classList.remove('active');
         sendBtn.disabled = false;
         return;
       }
 
       const result = await window.chatBridge.send(text, sessionId);
-      typing.classList.remove('active');
+      hideLoading();
 
-      if (result.reply) {
-        addMsg(result.reply, 'pet');
-      } else if (result.error) {
-        addMsg(result.error, 'pet');
+      if (streamEl) {
+        if (result.reply) streamEl.textContent = result.reply;
+        else if (result.error) streamEl.textContent = result.error;
       } else {
-        addMsg(_t('no_reply'), 'pet');
+        if (result.reply) addMsg(result.reply, 'pet');
+        else if (result.error) addMsg(result.error, 'pet');
+        else addMsg(_t('no_reply'), 'pet');
       }
     } catch (e) {
-      console.error('[Chat] Error:', e);
-      typing.classList.remove('active');
+      hideLoading();
       addMsg(_t('conn_failed'), 'pet');
     }
 
+    streamEl = null;
+    streamText = '';
     sendBtn.disabled = false;
     input.focus();
   }

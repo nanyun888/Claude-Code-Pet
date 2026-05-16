@@ -341,20 +341,18 @@ ipcMain.on('chat:save-config', (_, cfg: Record<string, string>) => {
   saveConfig(cfg);
 });
 
-// === Chat via Claude Code CLI ===
-// Each message spawns a claude process; --continue links conversation context.
+// === Chat via Claude Code CLI (streaming) ===
 ipcMain.handle('chat:send', async (_: any, { text, sessionId }: { text: string; sessionId?: string }) => {
   console.log('[Chat] Send:', text.slice(0, 80), 'session:', sessionId || 'default');
   return new Promise((resolve) => {
     try {
-      const args = ['--print', '--output-format', 'text'];
+      const args = ['--print', '--output-format', 'stream-json', '--verbose'];
       let projectDir = process.cwd();
 
       if (sessionId) {
         projectDir = getProjectDirForSession(sessionId);
         args.push('--resume', sessionId);
       } else {
-        // No session specified — find the most recent non-active session
         const sessions = discoverSessions();
         const activeId = findActiveSessionId();
         const recent = sessions.find(s => s.id !== activeId);
@@ -363,7 +361,6 @@ ipcMain.handle('chat:send', async (_: any, { text, sessionId }: { text: string; 
           args.push('--resume', recent.id);
           console.log('[Chat] Auto-selected session:', recent.id);
         } else {
-          // All sessions are active, use --continue as fallback
           args.push('--continue');
         }
       }
@@ -371,25 +368,63 @@ ipcMain.handle('chat:send', async (_: any, { text, sessionId }: { text: string; 
       console.log('[Chat] CWD:', projectDir, 'args:', args.join(' '));
 
       const proc = spawn('claude', args, { cwd: projectDir, shell: true, timeout: 120000 });
-      let stdout = '';
-      let stderr = '';
+      let buf = '';
+      let settled = false;
 
-      proc.stdout.on('data', (data: Buffer) => { stdout += data.toString(); });
+      proc.stdout.on('data', (data: Buffer) => {
+        buf += data.toString();
+        const lines = buf.split('\n');
+        buf = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const obj = JSON.parse(line);
+
+            // Stream text chunks to renderer
+            if (obj.type === 'assistant' && obj.message?.content) {
+              const textParts = obj.message.content
+                .filter((c: any) => c.type === 'text')
+                .map((c: any) => c.text)
+                .join('');
+              if (textParts) {
+                chatWindow?.webContents.send('chat:stream', textParts);
+              }
+            }
+
+            // Final result
+            if (obj.type === 'result' && !settled) {
+              settled = true;
+              if (obj.is_error) {
+                resolve({ error: obj.result || 'Claude Code error' });
+              } else {
+                resolve({ reply: obj.result || '' });
+              }
+            }
+          } catch {}
+        }
+      });
+
+      let stderr = '';
       proc.stderr.on('data', (data: Buffer) => { stderr += data.toString(); });
 
       proc.on('close', (code) => {
-        console.log('[Chat] Exit code:', code, 'output:', stdout.length);
-        if (code === 0 && stdout.trim()) {
-          resolve({ reply: stdout.trim() });
-        } else if (stderr.trim()) {
-          resolve({ error: stderr.trim().slice(0, 300) });
-        } else {
-          resolve({ error: 'Claude Code 没有返回回复' });
+        console.log('[Chat] Exit code:', code);
+        if (!settled) {
+          settled = true;
+          if (stderr.trim()) {
+            resolve({ error: stderr.trim().slice(0, 300) });
+          } else {
+            resolve({ error: 'Claude Code 没有返回回复' });
+          }
         }
       });
 
       proc.on('error', (err) => {
-        resolve({ error: t('chat_cli_error') + err.message });
+        if (!settled) {
+          settled = true;
+          resolve({ error: t('chat_cli_error') + err.message });
+        }
       });
 
       proc.stdin.write(text);
