@@ -98,7 +98,7 @@ function positionChatToFollowPet() {
   const [px, py] = mainWindow.getPosition();
   const cx = px - Math.round((chatW - 180) / 2);
   const cy = py - chatH + 15;
-  chatWindow.setPosition(Math.max(0, cx), Math.max(0, cy));
+  chatWindow.setBounds({ x: Math.max(0, cx), y: Math.max(0, cy), width: chatW, height: chatH });
 }
 
 function createChatWindow() {
@@ -137,8 +137,8 @@ function createChatWindow() {
     },
   });
 
-  chatWindow.setMinimumSize(260, 200);
-  chatWindow.setMaximumSize(600, 500);
+  chatWindow.setMinimumSize(200, 150);
+  chatWindow.setMaximumSize(800, 600);
 
   chatWindow.loadFile(path.join(__dirname, '..', '..', 'src', 'renderer', 'chat.html'));
   chatWindow.setVisibleOnAllWorkspaces(true);
