@@ -90,14 +90,14 @@ function createWindow() {
   });
 }
 
+let chatW = 240;
+let chatH = 200;
+
 function positionChatToFollowPet() {
   if (!mainWindow || !chatWindow || chatWindow.isDestroyed()) return;
   const [px, py] = mainWindow.getPosition();
-  const cfg = loadConfig();
-  const cw = parseInt(cfg.chatWidth) || 240;
-  const ch = parseInt(cfg.chatHeight) || 200;
-  const cx = px - Math.round((cw - 180) / 2);
-  const cy = py - ch + 15;
+  const cx = px - Math.round((chatW - 180) / 2);
+  const cy = py - chatH + 15;
   chatWindow.setPosition(Math.max(0, cx), Math.max(0, cy));
 }
 
@@ -112,8 +112,8 @@ function createChatWindow() {
   if (!mainWindow) return;
   const [px, py] = mainWindow.getPosition();
   const cfg = loadConfig();
-  const chatW = parseInt(cfg.chatWidth) || 240;
-  const chatH = parseInt(cfg.chatHeight) || 200;
+  chatW = parseInt(cfg.chatWidth) || 240;
+  chatH = parseInt(cfg.chatHeight) || 200;
 
   // Position just above pet's head
   const cx = px - Math.round((chatW - 180) / 2);
@@ -150,6 +150,8 @@ function createChatWindow() {
     resizeTimer = setTimeout(() => {
       if (chatWindow && !chatWindow.isDestroyed()) {
         const [w, h] = chatWindow.getSize();
+        chatW = w;
+        chatH = h;
         saveConfig({ chatWidth: String(w), chatHeight: String(h) });
       }
     }, 500);
