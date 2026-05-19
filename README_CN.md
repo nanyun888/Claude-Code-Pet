@@ -6,19 +6,24 @@
 
 ## 功能
 
-- 像素小狐狸常驻桌面，10 种动画状态
+- 像素宠物常驻桌面，10 种动画状态
 - Claude Code Hook 联动：执行工具时显示工作中，任务完成时庆祝
 - 双击宠物打开聊天（接入 Claude Code CLI，有项目上下文）
-- 右键菜单切换状态、设置、聊天、漫步开关
+- 右键菜单：聊天、设置、切换形象、切换状态、漫步开关、退出
 - 空闲时自动在桌面漫步
 - 空闲 8-15 秒随机休闲动作（wink / 啃饼干 / 睡觉 / 跳跃）
 - 单击互动：弹跳 + 爱心动画
 - 任务气泡：Claude Code 执行任务时显示工具名和详情
 - Session 选择器：连接到正在运行的 Claude CLI 会话
 - 流式输出：文字逐块显示，带加载进度提示
+- 宠物形象切换（狐狸 / 猫咪）
+- 聊天窗口可缩放，记住大小
 - 国际化支持（中文/英文，自动检测系统语言）
+- Windows NSIS 安装包
 
 ## 安装
+
+### 从源码运行
 
 ```bash
 git clone https://github.com/nanyun888/Claude-Code-Pet.git
@@ -27,11 +32,19 @@ npm install
 npm run dev
 ```
 
+### 从安装包安装
+
+从 [Releases](https://github.com/nanyun888/Claude-Code-Pet/releases) 下载 `Claude Code Pet Setup x.x.x.exe` 运行。
+
 ## Claude Code Hook 配置
 
 首次启动会自动配置 Hooks。也可以手动配置：
 
-在 `~/.claude/settings.json` 中添加：
+```bash
+node src/hooks/setup.js
+```
+
+或在 `~/.claude/settings.json` 中添加：
 
 ```json
 {
@@ -49,20 +62,24 @@ npm run dev
 }
 ```
 
-或运行自动配置：
-
-```bash
-node src/hooks/setup.js
-```
-
 ## 聊天功能
 
 双击宠物打开聊天窗口，接入 Claude Code CLI（`claude --print --resume`）：
 
 - **Session 选择器**：下拉菜单显示所有 Claude CLI 会话，选择连接到正在运行的会话
 - **默认会话**：自动选择最近的非活跃会话
-- **流式输出**：文字逐块显示，带加载进度提示（"正在连接..." → "正在加载上下文..." → "正在生成回复..."）
+- **流式输出**：文字逐块显示，带加载进度提示
 - **项目上下文**：Claude Code 有完整项目访问权限（代码、CLAUDE.md、工具）
+- **可缩放**：拖拽窗口边缘调整大小，关闭后自动记住尺寸
+
+## 宠物形象
+
+右键宠物 → 切换形象：
+
+| 形象 | 说明 |
+|------|------|
+| 狐狸 | 默认像素狐狸，暖橙/白色调 |
+| 猫咪 | 灰白色像素猫，圆耳、长尾、胡须 |
 
 ## 支持的 AI 模型
 
@@ -92,7 +109,7 @@ node src/hooks/setup.js
 
 - 左键单击：互动（弹跳 + 爱心）
 - 左键双击：打开聊天
-- 右键：菜单（聊天 / 设置 / 切换状态 / 漫步开关 / 退出）
+- 右键：菜单（聊天 / 设置 / 切换形象 / 切换状态 / 漫步开关 / 退出）
 - 系统托盘：显示/隐藏/设置/退出
 
 ## 国际化
