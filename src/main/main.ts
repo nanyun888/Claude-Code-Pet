@@ -81,9 +81,7 @@ function createWindow() {
 
   // Track pet drag → reposition chat window in real-time
   mainWindow.on('move', () => {
-    if (!mainWindow || !chatWindow || chatWindow.isDestroyed()) return;
-    const [px, py] = mainWindow.getPosition();
-    chatWindow.setBounds({ x: px - 50, y: py - 250, width: 280, height: 240 });
+    positionChatToFollowPet();
   });
 
   mainWindow.on('close', (e) => {
@@ -95,7 +93,11 @@ function createWindow() {
 function positionChatToFollowPet() {
   if (!mainWindow || !chatWindow || chatWindow.isDestroyed()) return;
   const [px, py] = mainWindow.getPosition();
-  chatWindow.setBounds({ x: px - 50, y: py - 250, width: 280, height: 240 });
+  const [cw, ch] = chatWindow.getSize();
+  // Position chat just above pet's head (pet top edge = py)
+  const cx = px - Math.round((cw - 180) / 2); // Center over pet (180px wide)
+  const cy = py - ch + 15; // Overlap slightly with pet top
+  chatWindow.setBounds({ x: Math.max(0, cx), y: Math.max(0, cy), width: cw, height: ch });
 }
 
 function createChatWindow() {
@@ -112,11 +114,15 @@ function createChatWindow() {
   const chatW = parseInt(cfg.chatWidth) || 300;
   const chatH = parseInt(cfg.chatHeight) || 320;
 
+  // Position just above pet's head
+  const cx = px - Math.round((chatW - 180) / 2);
+  const cy = py - chatH + 15;
+
   chatWindow = new BrowserWindow({
     width: chatW,
     height: chatH,
-    x: px - 50,
-    y: py - 330,
+    x: Math.max(0, cx),
+    y: Math.max(0, cy),
     frame: false,
     transparent: true,
     alwaysOnTop: true,
