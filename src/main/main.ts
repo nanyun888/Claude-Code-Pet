@@ -108,10 +108,13 @@ function createChatWindow() {
 
   if (!mainWindow) return;
   const [px, py] = mainWindow.getPosition();
+  const cfg = loadConfig();
+  const chatW = parseInt(cfg.chatWidth) || 300;
+  const chatH = parseInt(cfg.chatHeight) || 320;
 
   chatWindow = new BrowserWindow({
-    width: 300,
-    height: 320,
+    width: chatW,
+    height: chatH,
     x: px - 50,
     y: py - 330,
     frame: false,
@@ -132,6 +135,18 @@ function createChatWindow() {
 
   chatWindow.loadFile(path.join(__dirname, '..', '..', 'src', 'renderer', 'chat.html'));
   chatWindow.setVisibleOnAllWorkspaces(true);
+
+  // Save window size on resize (throttled)
+  let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+  chatWindow.on('resize', () => {
+    if (resizeTimer) clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if (chatWindow && !chatWindow.isDestroyed()) {
+        const [w, h] = chatWindow.getSize();
+        saveConfig({ chatWidth: String(w), chatHeight: String(h) });
+      }
+    }, 500);
+  });
 
   chatWindow.on('closed', () => { chatWindow = null; });
 }
