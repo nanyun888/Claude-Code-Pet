@@ -93,11 +93,12 @@ function createWindow() {
 function positionChatToFollowPet() {
   if (!mainWindow || !chatWindow || chatWindow.isDestroyed()) return;
   const [px, py] = mainWindow.getPosition();
-  const [cw, ch] = chatWindow.getSize();
-  // Position chat just above pet's head (pet top edge = py)
-  const cx = px - Math.round((cw - 180) / 2); // Center over pet (180px wide)
-  const cy = py - ch + 15; // Overlap slightly with pet top
-  chatWindow.setBounds({ x: Math.max(0, cx), y: Math.max(0, cy), width: cw, height: ch });
+  const cfg = loadConfig();
+  const cw = parseInt(cfg.chatWidth) || 300;
+  const ch = parseInt(cfg.chatHeight) || 320;
+  const cx = px - Math.round((cw - 180) / 2);
+  const cy = py - ch + 15;
+  chatWindow.setPosition(Math.max(0, cx), Math.max(0, cy));
 }
 
 function createChatWindow() {
