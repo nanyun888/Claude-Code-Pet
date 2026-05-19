@@ -221,6 +221,23 @@ ipcMain.on('pet:get-screen-size', (e) => {
   e.returnValue = { width, height };
 });
 
+// === Character System ===
+const CHARACTER_IDS = ['fox', 'cat'];
+const CHARACTER_NAMES: Record<string, Record<string, string>> = {
+  fox: { zh: '小狐狸', en: 'Fox' },
+  cat: { zh: '小猫咪', en: 'Cat' },
+};
+
+ipcMain.on('pet:get-character-id', (e) => {
+  const cfg = loadConfig();
+  e.returnValue = cfg.characterId || 'fox';
+});
+
+ipcMain.on('pet:switch-character', (_, id: string) => {
+  saveConfig({ characterId: id });
+  mainWindow?.webContents.send('state:change', 'character:' + id);
+});
+
 ipcMain.on('pet:drag-start', () => { isDragging = true; stopAutoWalk(); });
 ipcMain.on('pet:drag-end', () => {
   isDragging = false;
@@ -252,6 +269,21 @@ ipcMain.on('pet:context-menu', () => {
         { label: (walkEnabled ? '✓ ' : '  ') + t('menu_on'), click: () => { walkEnabled = true; scheduleAutoWalk(); } },
         { label: (!walkEnabled ? '✓ ' : '  ') + t('menu_off'), click: () => { walkEnabled = false; stopAutoWalk(); } },
       ],
+    },
+    {
+      label: t('menu_switch_char') || '切换形象',
+      submenu: CHARACTER_IDS.map(id => {
+        const cfg = loadConfig();
+        const currentId = cfg.characterId || 'fox';
+        const lang = i18n?.getLang() || 'zh';
+        return {
+          label: (id === currentId ? '✓ ' : '  ') + (CHARACTER_NAMES[id]?.[lang] || id),
+          click: () => {
+            saveConfig({ characterId: id });
+            mainWindow?.webContents.send('state:change', 'character:' + id);
+          },
+        };
+      }),
     },
     { type: 'separator' },
     { label: t('menu_reset_pos'), click: () => resetPosition() },

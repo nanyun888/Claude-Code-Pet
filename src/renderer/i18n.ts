@@ -38,6 +38,7 @@ const strings: Record<Lang, Record<string, string>> = {
     menu_reset_pos: '重置位置',
     menu_hide: '隐藏宠物',
     menu_exit: '退出',
+    menu_switch_char: '切换形象',
 
     // Tool labels
     tool_Bash: '执行命令',
@@ -92,6 +93,7 @@ const strings: Record<Lang, Record<string, string>> = {
     menu_reset_pos: 'Reset Position',
     menu_hide: 'Hide Pet',
     menu_exit: 'Exit',
+    menu_switch_char: 'Switch Character',
 
     // Tool labels
     tool_Bash: 'Run Command',
