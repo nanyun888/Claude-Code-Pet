@@ -479,6 +479,7 @@ ipcMain.on('hook:event', (_, state: string) => {
 // === IPC: State tracking ===
 ipcMain.on('pet:state-changed', (_, state: string) => {
   currentState = state;
+  if (state === 'walk') return; // Don't stop walk animation
   if (state !== 'idle') {
     stopAutoWalk();
   } else {
@@ -520,7 +521,6 @@ function startAutoWalk() {
   }
 
   walkTarget = { x: tx, y: ty };
-  console.log('[Walk] Start: from', cx, cy, 'to', tx, ty, 'screen', screenW, screenH);
 
   // Tell renderer to show walk animation and send target
   mainWindow.webContents.send('state:change', 'walk');
